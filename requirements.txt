@@ -1,0 +1,5 @@
+Django~=6.0.5
+firebase-admin>=6.0
+python-dotenv>=1.0
+requests>=2.31
+django-tailwind>=3.8

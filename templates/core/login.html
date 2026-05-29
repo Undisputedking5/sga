@@ -1,0 +1,342 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGA | Guardian Management Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+
+        body { background-color: #EEECEC; }
+
+        .navbar-border {
+            border-bottom: 2px solid #CC1F1F;
+        }
+
+        .card-top-bar {
+            height: 4px;
+            background: linear-gradient(to right, #CC1F1F, #991B1B);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .sga-logo-box {
+            width: 52px;
+            height: 52px;
+            background-color: #6B7280;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+
+        .sga-logo-box span {
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            line-height: 1;
+        }
+
+        .sga-logo-box small {
+            color: #D1D5DB;
+            font-size: 6px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 6px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #CC1F1F;
+        }
+
+        .input-wrapper .icon {
+            position: absolute;
+            left: 14px;
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 13px 14px 13px 42px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #9CA3AF;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9CA3AF;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-password:hover { color: #6B7280; }
+
+        .custom-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #D1D5DB;
+            border-radius: 3px;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox:checked {
+            background-color: #CC1F1F;
+            border-color: #CC1F1F;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+        }
+
+        .sign-in-btn {
+            width: 100%;
+            background-color: #CC1F1F;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .sign-in-btn:hover { background-color: #B91C1C; }
+        .sign-in-btn:active { background-color: #991B1B; }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #E5E7EB;
+            margin: 0;
+        }
+
+        .error-box {
+            background-color: #FEF2F2;
+            border: 1px solid #FECACA;
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #DC2626;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white navbar-border">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-3">
+                <span class="text-red-700 font-bold text-2xl tracking-tight">SGA</span>
+                <span class="text-gray-300 text-lg font-light">|</span>
+                <span class="text-gray-600 text-sm font-medium">SECURITY GROUP AFRICA</span>
+            </div>
+            <!-- Right: Help -->
+            <button class="w-8 h-8 rounded-full border-2 border-red-700 flex items-center justify-center text-red-700 hover:bg-red-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center py-12 px-4">
+        <div class="w-full max-w-md">
+
+            <!-- Card -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+
+                <!-- Red top bar -->
+                <div class="card-top-bar"></div>
+
+                <div class="px-10 py-10">
+
+                    <!-- Logo + Title -->
+                    <div class="flex flex-col items-center mb-8">
+                        <div class="sga-logo-box mb-5">
+                            <span>SGA</span>
+                            <small>SECURITY</small>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">Admin Portal Login</h1>
+                        <p class="text-gray-500 text-sm text-center">Secure access for SGA management personnel.</p>
+                    </div>
+
+                    <!-- Error message -->
+                    {% if error %}
+                    <div class="error-box mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Form -->
+                    <form method="POST" action="{% url 'core:login' %}">
+                        {% csrf_token %}
+
+                        <!-- Email -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="input-wrapper">
+                                <span class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="admin@sgasecurity.com"
+                                    value="{{ request.POST.email }}"
+                                    autocomplete="email"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="input-wrapper">
+                                <span class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    id="passwordInput"
+                                    placeholder="••••••••••••"
+                                    autocomplete="current-password"
+                                    required
+                                >
+                                <button type="button" class="toggle-password" onclick="togglePassword()">
+                                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember Me + Forgot Password -->
+                        <div class="flex items-center justify-between mb-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="remember" class="custom-checkbox">
+                                <span class="text-sm text-gray-600">Remember Me</span>
+                            </label>
+                            <a href="#" class="text-sm font-semibold text-red-700 hover:text-red-800 transition-colors">
+                                Forgot Password?
+                            </a>
+                        </div>
+
+                        <!-- Sign In Button -->
+                        <button type="submit" class="sign-in-btn">
+                            SIGN IN
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </button>
+
+                    </form>
+
+                    <!-- Divider + Authorized -->
+                    <div class="mt-7">
+                        <hr class="divider mb-5">
+                        <div class="flex items-center justify-center gap-2 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span class="text-xs font-semibold tracking-widest uppercase">Authorized Access Only</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Trouble logging in -->
+            <p class="text-center text-sm text-gray-500 mt-6">
+                Trouble logging in?
+                <a href="#" class="text-red-700 font-medium hover:text-red-800 transition-colors">Contact Support</a>
+            </p>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-4">
+        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+            <span class="text-xs font-bold text-gray-800 tracking-widest uppercase">SGA Security</span>
+            <div class="flex items-center gap-6 text-xs text-gray-500">
+                <a href="#" class="hover:text-gray-700 transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-gray-700 transition-colors">Terms of Service</a>
+                <a href="#" class="hover:text-gray-700 transition-colors">Security Protocols</a>
+            </div>
+            <span class="text-xs text-gray-400">© SECURITY GROUP AFRICA. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                `;
+            } else {
+                input.type = 'password';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
+            }
+        }
+    </script>
+
+</body>
+</html>

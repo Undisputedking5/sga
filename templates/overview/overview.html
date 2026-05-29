@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Overview — SGA  Admin{% endblock %}
+
+{% block page_title %}
+    Overview <span class="text-gray-300 font-normal mx-2">|</span>
+    <span class="text-sm font-normal text-gray-400">{{ today_display }}</span>
+{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="mb-6 flex items-center space-x-3 bg-red-50 border border-red-100 text-red-700 text-xs font-medium px-4 py-3 rounded-xl">
+    <span class="material-icons-outlined text-[18px]">error_outline</span>
+    <span>Firebase error: {{ error }}</span>
+</div>
+{% endif %}
+
+<!-- Stat Cards Row -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+
+    <!-- Total Guards -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div class="flex items-start justify-between mb-4">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Guards</p>
+            <span class="material-icons-outlined text-gray-300 text-[20px]">groups</span>
+        </div>
+        <p class="text-4xl font-bold text-gray-900 tracking-tight">{{ total_guards|default:"0" }}</p>
+        <p class="text-[11px] text-gray-400 mt-2">Registered in system</p>
+    </div>
+
+    <!-- Checked In Today -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div class="flex items-start justify-between mb-4">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Checked In Today</p>
+            <span class="material-icons-outlined text-gray-300 text-[20px]">how_to_reg</span>
+        </div>
+        <p class="text-4xl font-bold text-gray-900 tracking-tight">{{ checked_in|default:"0" }}</p>
+        {% if total_guards > 0 %}
+        {% widthratio checked_in total_guards 100 as checkin_pct %}
+        <div class="mt-3 w-full bg-gray-100 rounded-full h-1">
+            <div class="bg-sgaRed h-1 rounded-full" style="width: {{ checkin_pct }}%"></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Late Arrivals -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div class="flex items-start justify-between mb-4">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Late Arrivals</p>
+            <span class="material-icons-outlined text-gray-300 text-[20px]">schedule</span>
+        </div>
+        <p class="text-4xl font-bold text-gray-900 tracking-tight">{{ late_arrivals|default:"0" }}</p>
+        {% if late_arrivals > 0 %}
+        <span class="inline-block mt-2 text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Warning</span>
+        {% else %}
+        <p class="text-[11px] text-gray-400 mt-2">All on time</p>
+        {% endif %}
+    </div>
+
+    <!-- Absent -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div class="flex items-start justify-between mb-4">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Absent</p>
+            <span class="material-icons-outlined text-gray-300 text-[20px]">person_off</span>
+        </div>
+        <p class="text-4xl font-bold text-gray-900 tracking-tight">{{ absent|default:"0" }}</p>
+        {% if absent > 0 %}
+        <span class="inline-block mt-2 text-[9px] font-bold uppercase tracking-wider bg-red-100 text-sgaRed px-2 py-0.5 rounded-full">Critical</span>
+        {% else %}
+        <p class="text-[11px] text-gray-400 mt-2">No absences today</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Live Check-in + Right Column -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+
+    <!-- Live Check-in Table (2/3 width) -->
+    <div class="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+            <h3 class="text-sm font-semibold text-gray-900">Live Check-in</h3>
+            <a href="/attendance/" class="text-xs font-semibold text-sgaRed hover:underline">View All</a>
+        </div>
+
+        {% if live_checkins %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-50">
+                    <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-6 py-3">Guard Name</th>
+                    <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Site</th>
+                    <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Region</th>
+                    <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Time</th>
+                    <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for entry in live_checkins %}
+                <tr class="hover:bg-gray-50/50 transition-colors duration-100">
+                    <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ entry.name }}</td>
+                    <td class="px-4 py-4 text-sm text-gray-600">{{ entry.site }}</td>
+                    <td class="px-4 py-4 text-sm text-gray-600">{{ entry.region }}</td>
+                    <td class="px-4 py-4 text-sm text-gray-600 font-mono">{{ entry.time }}</td>
+                    <td class="px-4 py-4">
+                        {% if entry.status == 'present' %}
+                        <span class="inline-flex items-center text-[11px] font-semibold bg-green-50 text-green-600 px-2.5 py-1 rounded-full">On Time</span>
+                        {% elif entry.status == 'late' %}
+                        <span class="inline-flex items-center text-[11px] font-semibold bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full">Late</span>
+                        {% else %}
+                        <span class="inline-flex items-center text-[11px] font-semibold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full">{{ entry.status|capfirst }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="flex flex-col items-center justify-center py-16 text-gray-300">
+            <span class="material-icons-outlined text-[36px] mb-2">event_busy</span>
+            <p class="text-xs font-medium">No check-ins recorded yet today</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column -->
+    <div class="flex flex-col gap-4">
+
+        <!-- Region Breakdown -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-900">Region Breakdown</h3>
+                <button class="text-gray-300 hover:text-gray-500">
+                    <span class="material-icons-outlined text-[18px]">more_vert</span>
+                </button>
+            </div>
+
+            {% if region_stats %}
+            <div class="space-y-4">
+                {% for region in region_stats %}
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-medium text-gray-700">{{ region.name }}</span>
+                        <span class="text-xs font-semibold text-gray-500">{{ region.pct }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full {% if region.pct >= 85 %}bg-sgaRed{% elif region.pct >= 70 %}bg-gray-700{% else %}bg-amber-400{% endif %}"
+                             style="width: {{ region.pct }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-8 text-gray-300">
+                <span class="material-icons-outlined text-[28px] mb-1">map</span>
+                <p class="text-xs font-medium">No region data</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Critical Alerts -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <span class="material-icons-outlined text-amber-500 text-[18px]">warning_amber</span>
+                    <h3 class="text-sm font-semibold text-sgaRed">Critical Alerts</h3>
+                </div>
+                {% if active_alerts_count > 0 %}
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-red-50 text-sgaRed border border-red-100 px-2 py-0.5 rounded-full">
+                    {{ active_alerts_count }} Active
+                </span>
+                {% endif %}
+            </div>
+
+            {% if alerts %}
+            <div class="space-y-2">
+                {% for alert in alerts %}
+                <div class="rounded-xl p-3 {% if alert.type == 'critical' %}bg-red-50 border border-red-100{% else %}bg-amber-50 border border-amber-100{% endif %}">
+                    <div class="flex items-start space-x-2.5">
+                        <span class="material-icons-outlined text-[16px] mt-0.5 {% if alert.type == 'critical' %}text-sgaRed{% else %}text-amber-500{% endif %}">
+                            {% if alert.type == 'critical' %}error_outline{% else %}warning_amber{% endif %}
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold {% if alert.type == 'critical' %}text-red-800{% else %}text-amber-800{% endif %}">
+                                {{ alert.title }}
+                            </p>
+                            {% if alert.subtitle %}
+                            <p class="text-[10px] font-bold uppercase tracking-wider {% if alert.type == 'critical' %}text-red-400{% else %}text-amber-500{% endif %} mt-0.5">
+                                {{ alert.subtitle }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-8 text-gray-300">
+                <span class="material-icons-outlined text-[28px] mb-1">check_circle</span>
+                <p class="text-xs font-medium">No active alerts</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- Interactive Regional Map (placeholder) -->
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center justify-center text-center">
+    <span class="material-icons-outlined text-gray-200 text-[48px] mb-3">map</span>
+    <h3 class="text-sm font-semibold text-gray-700 mb-1">Interactive Regional Map</h3>
+    <p class="text-xs text-gray-400 max-w-sm">
+        Live visual tracking of all deployment sites across {{ region_stats|length }} region{{ region_stats|length|pluralize }}.
+        Click to drill down into specific site analytics.
+    </p>
+</div>
+
+{% endblock %}
