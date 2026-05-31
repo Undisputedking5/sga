@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block page_title %}{{ region.name }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="space-y-6">
+
+  <!-- ── BREADCRUMB ─────────────────────────────────────────────── -->
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <a href="{% url 'regions:regions' %}" class="hover:text-red-600 transition-colors">Regions</a>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-900 font-medium">{{ region.name }}</span>
+  </div>
+
+  <!-- ── REGION HEADER ──────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-2xl font-bold text-gray-900">{{ region.name }}</h1>
+          {% if region.status == 'stable' %}
+            <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">● STABLE</span>
+          {% elif region.status == 'monitoring' %}
+            <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">● MONITORING</span>
+          {% elif region.status == 'critical' %}
+            <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">● CRITICAL</span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-gray-400 font-mono mt-1">
+          {{ region.region_code }} &nbsp;·&nbsp; {{ region.map_code }}
+          {% if region.manager_name and region.manager_name != 'Unassigned' %}
+          &nbsp;·&nbsp; Manager: <span class="text-gray-600">{{ region.manager_name }}</span>
+          {% endif %}
+        </p>
+      </div>
+      <a href="{% url 'regions:regions' %}"
+        class="inline-flex items-center gap-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Regions
+      </a>
+    </div>
+
+    <!-- Mini stats -->
+    <div class="grid grid-cols-3 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Guards</p>
+        <p class="text-3xl font-bold text-gray-900 mt-1">{{ region.guard_count }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Active Now</p>
+        <p class="text-3xl font-bold text-green-600 mt-1">{{ region.active_count }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Sites</p>
+        <p class="text-3xl font-bold text-gray-900 mt-1">{{ region.sites }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Incidents</p>
+        {% if region.incidents == 'high' %}
+          <p class="text-3xl font-bold text-red-600 mt-1">High</p>
+        {% elif region.incidents == 'med' %}
+          <p class="text-3xl font-bold text-yellow-500 mt-1">Med</p>
+        {% else %}
+          <p class="text-3xl font-bold text-green-600 mt-1">Low</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TWO-COLUMN: Map + Guards list ──────────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+    <!-- Map -->
+    <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-900">Region Map</h2>
+      </div>
+      <div id="regionMap" style="height:340px;"></div>
+    </div>
+
+    <!-- Guards in region -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-gray-900">Guards in Region</h2>
+        <span class="text-xs text-gray-400">{{ region_guards|length }} total</span>
+      </div>
+      <div class="divide-y divide-gray-50 flex-1 overflow-y-auto" style="max-height:340px;">
+        {% for guard in region_guards %}
+        <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+          <!-- Avatar -->
+          {% if guard.avatar_url %}
+            <img src="{{ guard.avatar_url }}" class="w-8 h-8 rounded-full object-cover flex-shrink-0"/>
+          {% else %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+              style="background-color: {{ guard.avatar_color|default:'#6b7280' }};">
+              {{ guard.initials|default:guard.name|slice:":2"|upper }}
+            </div>
+          {% endif %}
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-gray-900 truncate">{{ guard.name }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ guard.site_name|default:"No site" }}</p>
+          </div>
+          {% if guard.status == 'active' %}
+            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Active</span>
+          {% elif guard.status == 'on_leave' %}
+            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Leave</span>
+          {% elif guard.status == 'urgent' %}
+            <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-medium flex-shrink-0">Urgent</span>
+          {% else %}
+            <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Inactive</span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="px-5 py-10 text-center text-sm text-gray-400">No guards assigned to this region</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const regionMap = L.map('regionMap', {
+    center: [{{ region.lat }}, {{ region.lng }}],
+    zoom: 11,
+    zoomControl: true,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CartoDB',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(regionMap);
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:18px;height:18px;background:#ef4444;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #ef444488;"></div>`,
+    iconSize: [18, 18], iconAnchor: [9, 9]
+  });
+
+  L.marker([{{ region.lat }}, {{ region.lng }}], { icon })
+    .bindPopup('<b>{{ region.name }}</b>')
+    .addTo(regionMap)
+    .openPopup();
+</script>
+
+{% endblock %}

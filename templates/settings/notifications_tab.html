@@ -1,0 +1,73 @@
+<form method="POST" action="{% url 'settings:update_notifications' %}">
+  {% csrf_token %}
+
+  <!-- Email Alerts -->
+  <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+    <div class="flex items-start gap-8">
+      <div class="min-w-[160px]">
+        <h2 class="text-base font-semibold text-gray-900">Email Alerts</h2>
+        <p class="text-sm text-gray-500 mt-1">Choose which events trigger email notifications.</p>
+      </div>
+      <div class="flex-1 space-y-3">
+        {% for field, label, desc in email_toggles %}
+          <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+            <div>
+              <p class="text-sm font-medium text-gray-800">{{ label }}</p>
+              <p class="text-xs text-gray-500">{{ desc }}</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="{{ field }}" class="sr-only peer"
+                {% if not notif_data %}checked
+                {% elif field == 'email_attendance' and notif_data.email_attendance_alerts %}checked
+                {% elif field == 'email_incidents' and notif_data.email_incident_reports %}checked
+                {% elif field == 'email_summary' and notif_data.email_daily_summary %}checked{% endif %}>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-red-500 rounded-full peer
+                peer-checked:after:translate-x-full peer-checked:after:border-white
+                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                after:bg-white after:border-gray-300 after:border after:rounded-full
+                after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Push Alerts -->
+  <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+    <div class="flex items-start gap-8">
+      <div class="min-w-[160px]">
+        <h2 class="text-base font-semibold text-gray-900">Push Alerts</h2>
+        <p class="text-sm text-gray-500 mt-1">In-portal and push notification preferences.</p>
+      </div>
+      <div class="flex-1 space-y-3">
+        {% for field, label, desc in push_toggles %}
+          <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+            <div>
+              <p class="text-sm font-medium text-gray-800">{{ label }}</p>
+              <p class="text-xs text-gray-500">{{ desc }}</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="{{ field }}" class="sr-only peer"
+                {% if not notif_data %}checked
+                {% elif field == 'push_urgent' and notif_data.push_urgent_alerts %}checked
+                {% elif field == 'push_regions' and notif_data.push_region_updates %}checked
+                {% elif field == 'push_approvals' and notif_data.push_report_approvals %}checked{% endif %}>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-red-500 rounded-full peer
+                peer-checked:after:translate-x-full peer-checked:after:border-white
+                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                after:bg-white after:border-gray-300 after:border after:rounded-full
+                after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-end">
+    <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+      Save Preferences
+    </button>
+  </div>
+</form>

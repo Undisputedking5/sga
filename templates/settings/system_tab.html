@@ -1,0 +1,83 @@
+<!-- Organisation Card -->
+<div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+  <div class="flex items-start gap-8">
+    <div class="min-w-[160px]">
+      <h2 class="text-base font-semibold text-gray-900">Organisation</h2>
+      <p class="text-sm text-gray-500 mt-1">Configure your organisation name, timezone, and date preferences.</p>
+    </div>
+
+    <form method="POST" action="{% url 'settings:update_system' %}" class="flex-1">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Organisation Name</label>
+          <input type="text" name="org_name"
+            value="{{ system_data.org_name|default:'SGA Security Group' }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Timezone</label>
+          <select name="timezone" class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white">
+            {% for tz in timezones %}
+              <option value="{{ tz }}" {% if system_data.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Date Format</label>
+          <select name="date_format" class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white">
+            <option value="DD/MM/YYYY" {% if system_data.date_format == 'DD/MM/YYYY' %}selected{% endif %}>DD/MM/YYYY</option>
+            <option value="MM/DD/YYYY" {% if system_data.date_format == 'MM/DD/YYYY' %}selected{% endif %}>MM/DD/YYYY</option>
+            <option value="YYYY-MM-DD" {% if system_data.date_format == 'YYYY-MM-DD' %}selected{% endif %}>YYYY-MM-DD</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Attendance Rules Card -->
+<div class="bg-white border border-gray-200 rounded-lg p-6">
+  <div class="flex items-start gap-8">
+    <div class="min-w-[160px]">
+      <h2 class="text-base font-semibold text-gray-900">Attendance Rules</h2>
+      <p class="text-sm text-gray-500 mt-1">Set default shift hours and late-arrival thresholds.</p>
+    </div>
+
+    <form method="POST" action="{% url 'settings:update_system' %}" class="flex-1">
+      {% csrf_token %}
+      <input type="hidden" name="org_name" value="{{ system_data.org_name|default:'SGA Security Group' }}">
+      <input type="hidden" name="timezone" value="{{ system_data.timezone|default:'Africa/Nairobi' }}">
+      <input type="hidden" name="date_format" value="{{ system_data.date_format|default:'DD/MM/YYYY' }}">
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Default Shift Start</label>
+          <input type="time" name="shift_start" value="{{ system_data.shift_start|default:'07:00' }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Default Shift End</label>
+          <input type="time" name="shift_end" value="{{ system_data.shift_end|default:'19:00' }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Late Threshold (mins)</label>
+          <input type="number" name="late_threshold" min="1" max="60"
+            value="{{ system_data.late_threshold_minutes|default:15 }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

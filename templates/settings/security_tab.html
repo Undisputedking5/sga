@@ -1,0 +1,80 @@
+<form method="POST" action="{% url 'settings:update_security' %}">
+  {% csrf_token %}
+
+  <!-- Session & Access -->
+  <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+    <div class="flex items-start gap-8">
+      <div class="min-w-[160px]">
+        <h2 class="text-base font-semibold text-gray-900">Session & Access</h2>
+        <p class="text-sm text-gray-500 mt-1">Control login sessions and access attempt limits.</p>
+      </div>
+      <div class="flex-1 grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Session Timeout (hours)</label>
+          <input type="number" name="session_timeout" min="1" max="168"
+            value="{{ security_data.session_timeout_hours|default:24 }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Max Login Attempts</label>
+          <input type="number" name="login_attempts" min="1" max="20"
+            value="{{ security_data.login_attempts_limit|default:5 }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+        <div class="col-span-2 flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+          <div>
+            <p class="text-sm font-medium text-gray-800">Require Two-Factor Authentication</p>
+            <p class="text-xs text-gray-500">Enforce 2FA for all admin logins</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="require_2fa" class="sr-only peer" {% if security_data.require_2fa %}checked{% endif %}>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-red-500 rounded-full peer
+              peer-checked:after:translate-x-full peer-checked:after:border-white
+              after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+              after:bg-white after:border-gray-300 after:border after:rounded-full
+              after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IP Whitelist -->
+  <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+    <div class="flex items-start gap-8">
+      <div class="min-w-[160px]">
+        <h2 class="text-base font-semibold text-gray-900">IP Whitelist</h2>
+        <p class="text-sm text-gray-500 mt-1">Restrict dashboard access to specific IP addresses.</p>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg mb-3">
+          <div>
+            <p class="text-sm font-medium text-gray-800">Enable IP Whitelist</p>
+            <p class="text-xs text-gray-500">Only allow access from listed IPs</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="ip_whitelist" class="sr-only peer"
+              {% if security_data.ip_whitelist_enabled %}checked{% endif %}
+              onchange="document.getElementById('ipInput').classList.toggle('hidden', !this.checked)">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-red-500 rounded-full peer
+              peer-checked:after:translate-x-full peer-checked:after:border-white
+              after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+              after:bg-white after:border-gray-300 after:border after:rounded-full
+              after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+          </label>
+        </div>
+        <div id="ipInput" class="{% if not security_data.ip_whitelist_enabled %}hidden{% endif %}">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Allowed IPs (comma-separated)</label>
+          <textarea name="ip_whitelist_ips" rows="3" placeholder="e.g. 192.168.1.1, 10.0.0.5"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">{{ security_data.ip_whitelist }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-end">
+    <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+      Save Security Settings
+    </button>
+  </div>
+</form>

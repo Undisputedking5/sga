@@ -1,0 +1,145 @@
+{% comment %}
+  Partial: regions/_region_card.html
+  Context vars: region, badge_bg, badge_text, badge_label, card_border
+{% endcomment %}
+
+<div class="bg-white rounded-xl border {{ card_border }} shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+  <div class="flex">
+
+    <!-- ── Left: thumbnail image ─────────────────────── -->
+    <div class="relative w-44 flex-shrink-0 bg-gray-900 overflow-hidden">
+      {% if region.image_url %}
+        <img src="{{ region.image_url }}" alt="{{ region.name }}"
+          class="absolute inset-0 w-full h-full object-cover opacity-80"/>
+      {% else %}
+        <!-- Placeholder: dark grid pattern -->
+        <div class="absolute inset-0 flex items-center justify-center">
+          <svg class="w-16 h-16 text-gray-600 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="0.75"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+          <!-- subtle grid lines -->
+          <svg class="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid-{{ region.id }}" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ef4444" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-{{ region.id }})"/>
+          </svg>
+        </div>
+      {% endif %}
+
+      <!-- Map code tag -->
+      <div class="absolute bottom-2 left-2">
+        <span class="bg-black/70 text-gray-300 text-xs font-mono px-2 py-0.5 rounded">
+          {{ region.map_code }}
+        </span>
+      </div>
+    </div>
+    <!-- end thumbnail -->
+
+    <!-- ── Right: region info ─────────────────────────── -->
+    <div class="flex-1 p-4 flex flex-col justify-between min-w-0">
+
+      <!-- Top row: name + status badge + kebab menu -->
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-base font-bold text-gray-900 leading-tight">{{ region.name }}</h3>
+            <span class="{{ badge_bg }} {{ badge_text }} text-xs font-semibold px-2 py-0.5 rounded-full">
+              ● {{ badge_label }}
+            </span>
+          </div>
+          <p class="text-xs text-gray-400 font-mono mt-0.5">ID: {{ region.region_code }}</p>
+        </div>
+
+        <!-- Three-dot menu -->
+        <div class="relative flex-shrink-0">
+          <button onclick="toggleMenu('{{ region.id }}')"
+            class="menu-trigger p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm0 4c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+            </svg>
+          </button>
+          <div id="menu-{{ region.id }}"
+            class="region-menu hidden absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 w-44 text-sm">
+            <a href="{% url 'regions:region_detail' region.id %}"
+              class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              View Details
+            </a>
+            <a href="#" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Assign Manager
+            </a>
+            <hr class="my-1 border-gray-100"/>
+            <a href="#" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Edit Region
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="flex items-center gap-5 mt-3">
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Guards</p>
+          <p class="text-xl font-bold text-gray-900">{{ region.guard_count }}</p>
+        </div>
+        <div class="w-px h-8 bg-gray-100"></div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Sites</p>
+          <p class="text-xl font-bold text-gray-900">{{ region.sites|stringformat:"02d" }}</p>
+        </div>
+        <div class="w-px h-8 bg-gray-100"></div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Incidents</p>
+          {% if region.incidents == 'high' %}
+            <p class="text-xl font-bold text-red-600">High</p>
+          {% elif region.incidents == 'med' %}
+            <p class="text-xl font-bold text-yellow-500">Med</p>
+          {% else %}
+            <p class="text-xl font-bold text-green-600">Low</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-2 mt-3">
+        <a href="{% url 'regions:region_detail' region.id %}"
+          class="inline-flex items-center gap-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          View Details
+        </a>
+        <button
+          class="inline-flex items-center gap-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Assign Manager
+        </button>
+      </div>
+      <!-- end action buttons -->
+
+    </div>
+    <!-- end right panel -->
+
+  </div>
+</div>

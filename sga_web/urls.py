@@ -25,4 +25,5 @@ urlpatterns = [
     path('guards/', include('guards.urls')),
     path('regions/', include('regions.urls')),
     path('reports/', include('reports.urls')),
+    path('settings/', include('settings.urls')),
 ]
