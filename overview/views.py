@@ -1,125 +1,114 @@
 from django.shortcuts import render
-from core.decorators import login_required, superadmin_required
+from core.decorators import login_required
 from datetime import datetime
 from firebase_admin import db
 
 
 def get_overview_stats():
-    """
-    Fetch overview stats from Firebase Realtime Database.
-    Returns a dict with totals, live check-ins, region breakdown, and alerts.
-    Falls back to empty/zero values if Firebase is unavailable.
-    """
     try:
         today_str = datetime.now().strftime('%Y-%m-%d')
 
-        # --- Total guards ---
-        guards_ref = db.reference('guards')
-        guards_snap = guards_ref.get() or {}
+        # --- Guards ---
+        guards_snap = db.reference('guards').get() or {}
         total_guards = len(guards_snap)
 
-        # --- Attendance for today ---
-        attendance_ref = db.reference(f'attendance/{today_str}')
-        attendance_snap = attendance_ref.get() or {}
+        # --- Attendance: structure is /attendance/{uid}/{date}/ ---
+        attendance_snap = db.reference('attendance').get() or {}
 
-        checked_in = 0
+        checked_in   = 0
         late_arrivals = 0
-        absent = 0
+        absent        = 0
         live_checkins = []
 
-        for guard_id, record in attendance_snap.items():
-            status = record.get('status', '')
-            if status == 'present':
+        for uid, dates in attendance_snap.items():
+            if not isinstance(dates, dict):
+                continue
+            rec = dates.get(today_str)
+            if not isinstance(rec, dict):
+                continue
+
+            status = rec.get('status', '')
+            if status == 'on_time':
                 checked_in += 1
             elif status == 'late':
-                checked_in += 1  # late guards are still checked in
+                checked_in  += 1
                 late_arrivals += 1
             elif status == 'absent':
                 absent += 1
 
-            # Build live check-in rows (most recent first, cap at 10)
-            if status in ('present', 'late'):
-                guard_data = guards_snap.get(guard_id, {})
+            if status in ('on_time', 'late'):
+                guard_data = guards_snap.get(uid, {})
                 live_checkins.append({
-                    'name': guard_data.get('name', 'Unknown'),
-                    'site': record.get('site', '—'),
-                    'region': record.get('region', '—'),
-                    'time': record.get('check_in_time', '—'),
+                    'name':   guard_data.get('name', 'Unknown'),
+                    'site':   rec.get('site', '—'),
+                    'region': rec.get('region', '—'),
+                    'time':   rec.get('clock_in', '—'),
                     'status': status,
                 })
 
-        # Sort by time descending, keep latest 10
-        live_checkins = sorted(
-            live_checkins,
-            key=lambda x: x['time'],
-            reverse=True
-        )[:10]
+        live_checkins = sorted(live_checkins, key=lambda x: x['time'], reverse=True)[:10]
 
         # --- Region breakdown ---
-        regions_ref = db.reference('regions')
-        regions_snap = regions_ref.get() or {}
-
+        regions_snap = db.reference('regions').get() or {}
         region_stats = []
         for region_id, region_data in regions_snap.items():
             name = region_data.get('name', region_id)
-            total = region_data.get('total_guards', 0)
+            # count guards assigned to this region
+            total = sum(
+                1 for g in guards_snap.values()
+                if isinstance(g, dict) and g.get('region') == region_id
+            )
             present = sum(
-                1 for r in attendance_snap.values()
-                if r.get('region') == name and r.get('status') in ('present', 'late')
+                1 for uid, dates in attendance_snap.items()
+                if isinstance(dates, dict)
+                and isinstance(dates.get(today_str), dict)
+                and dates[today_str].get('region') == region_id
+                and dates[today_str].get('status') in ('on_time', 'late')
             )
             pct = round((present / total) * 100) if total > 0 else 0
             region_stats.append({'name': name, 'pct': pct})
 
         region_stats = sorted(region_stats, key=lambda x: x['name'])
 
-        # --- Critical alerts ---
-        alerts_ref = db.reference('alerts')
-        alerts_snap = alerts_ref.get() or {}
-        alerts = []
-        for alert_id, alert_data in alerts_snap.items():
-            if alert_data.get('resolved', False):
-                continue
-            alerts.append({
-                'type': alert_data.get('type', 'warning'),   # 'critical' | 'warning'
-                'title': alert_data.get('title', ''),
-                'subtitle': alert_data.get('subtitle', ''),
-            })
+        # --- Alerts ---
+        alerts_snap = db.reference('alerts').get() or {}
+        alerts = [
+            {
+                'type':     a.get('type', 'warning'),
+                'title':    a.get('title', ''),
+                'subtitle': a.get('subtitle', ''),
+            }
+            for a in alerts_snap.values()
+            if isinstance(a, dict) and not a.get('resolved', False)
+        ]
 
         return {
-            'total_guards': total_guards,
-            'checked_in': checked_in,
-            'late_arrivals': late_arrivals,
-            'absent': absent,
-            'live_checkins': live_checkins,
-            'region_stats': region_stats,
-            'alerts': alerts,
+            'total_guards':       total_guards,
+            'checked_in':         checked_in,
+            'late_arrivals':      late_arrivals,
+            'absent':             absent,
+            'live_checkins':      live_checkins,
+            'region_stats':       region_stats,
+            'alerts':             alerts,
             'active_alerts_count': len(alerts),
             'error': None,
         }
 
     except Exception as e:
         return {
-            'total_guards': 0,
-            'checked_in': 0,
-            'late_arrivals': 0,
-            'absent': 0,
-            'live_checkins': [],
-            'region_stats': [],
-            'alerts': [],
-            'active_alerts_count': 0,
-            'error': str(e),
+            'total_guards': 0, 'checked_in': 0, 'late_arrivals': 0, 'absent': 0,
+            'live_checkins': [], 'region_stats': [], 'alerts': [],
+            'active_alerts_count': 0, 'error': str(e),
         }
 
 
 @login_required
-# @superadmin_required
 def overview(request):
     stats = get_overview_stats()
     today_display = datetime.now().strftime('%A, %b %d, %Y')
-
     context = {
-        'active_nav': 'overview',
-        'page_title': 'Overview',
+        'active_nav':   'overview',
+        'page_title':   'Overview',
         'today_display': today_display,
         **stats,
     }

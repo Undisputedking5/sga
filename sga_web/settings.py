@@ -25,7 +25,8 @@ INSTALLED_APPS = [
     'guards',
     'regions',
     'reports',
-    'settings'
+    'settings',
+    'sites'
 ]
 
 MIDDLEWARE = [

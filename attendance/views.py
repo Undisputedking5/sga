@@ -4,7 +4,14 @@ from firebase_admin import db
 from core.decorators import login_required
 
 
-REGIONS = ["All Regions", "North", "South", "East", "West", "Central"]
+def _get_regions_list():
+    """Returns list of (region_id, display_name) tuples for the filter dropdown."""
+    try:
+        data = db.reference("regions").get() or {}
+        items = [(rid, r.get("name", rid)) for rid, r in data.items() if isinstance(r, dict)]
+        return [("All Regions", "All Regions")] + sorted(items, key=lambda x: x[1])
+    except Exception:
+        return [("All Regions", "All Regions")]
 
 
 def _get_date_range(range_key):
@@ -118,7 +125,7 @@ def attendance_log(request):
 
     context = {
         "records":        records,
-        "regions":        REGIONS,
+        "regions":        _get_regions_list(),
         "today":          date.today().strftime("%B %d, %Y"),
         "date_options":   [("Today", "today"), ("Yesterday", "yesterday"), ("Last 7 Days", "week")],
         "status_options": [("All", "all"), ("On Time", "on_time"), ("Late", "late"), ("Absent", "absent")],

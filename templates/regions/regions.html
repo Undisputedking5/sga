@@ -125,19 +125,19 @@
     <!-- Status helpers -->
     {% if region.status == 'stable' %}
       {% with badge_bg="bg-green-100" badge_text="text-green-700" badge_label="STABLE" card_border="border-gray-200" %}
-      {% include "regions/_region_card.html" %}
+      {% include "regions/region_card.html" %}
       {% endwith %}
     {% elif region.status == 'monitoring' %}
       {% with badge_bg="bg-yellow-100" badge_text="text-yellow-700" badge_label="MONITORING" card_border="border-yellow-200" %}
-      {% include "regions/_region_card.html" %}
+      {% include "regions/region_card.html" %}
       {% endwith %}
     {% elif region.status == 'critical' %}
       {% with badge_bg="bg-red-100" badge_text="text-red-700" badge_label="CRITICAL" card_border="border-red-300" %}
-      {% include "regions/_region_card.html" %}
+      {% include "regions/region_card.html" %}
       {% endwith %}
     {% else %}
       {% with badge_bg="bg-gray-100" badge_text="text-gray-600" badge_label="UNKNOWN" card_border="border-gray-200" %}
-      {% include "regions/_region_card.html" %}
+      {% include "regions/region_card.html" %}
       {% endwith %}
     {% endif %}
 

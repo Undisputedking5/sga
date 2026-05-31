@@ -4,77 +4,55 @@ from firebase_admin import db
 from core.decorators import login_required
 
 
-STATUSES = ["All Statuses", "Active", "On Leave", "Urgent", "Inactive"]
-REGIONS  = ["All Regions", "North Sector", "South Sector", "East Sector", "West Sector", "Central"]
-
-
 def _relative_time(iso_str):
-    """Convert ISO timestamp to relative string like '2 hours ago'."""
     if not iso_str:
         return "Unknown"
     try:
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        dt  = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
-        diff = now - dt
-        seconds = int(diff.total_seconds())
-
-        if seconds < 60:
-            return "Now (Active)"
-        elif seconds < 3600:
-            m = seconds // 60
-            return f"{m} minute{'s' if m != 1 else ''} ago"
-        elif seconds < 86400:
-            h = seconds // 3600
-            return f"{h} hour{'s' if h != 1 else ''} ago"
-        else:
-            d = seconds // 86400
-            return f"{d} day{'s' if d != 1 else ''} ago"
+        s   = int((now - dt).total_seconds())
+        if s < 60:      return "Now (Active)"
+        elif s < 3600:  m = s // 60;  return f"{m} minute{'s' if m != 1 else ''} ago"
+        elif s < 86400: h = s // 3600; return f"{h} hour{'s' if h != 1 else ''} ago"
+        else:           d = s // 86400; return f"{d} day{'s' if d != 1 else ''} ago"
     except Exception:
         return "Unknown"
 
 
-def _fetch_guards(status_filter, region_filter, rank_filter, search):
-    """
-    Read all guards from Firebase /guards/ node.
-    Applies filters and returns (guard_list, ranks_list).
+def _get_region_map():
+    """Returns {region_id: display_name} from Firebase."""
+    try:
+        data = db.reference("regions").get() or {}
+        return {rid: r.get("name", rid) for rid, r in data.items() if isinstance(r, dict)}
+    except Exception:
+        return {}
 
-    Expected Firebase structure:
-    /guards/{uid}/
-        name:         "Elena Rodriguez"
-        guard_id:     "S-88294"
-        avatar_url:   null
-        initials:     "ER"
-        avatar_color: "#4F46E5"
-        status:       "active"   ← active | on_leave | urgent | inactive
-        region:       "North Sector"
-        site_name:    "Metro Plaza"
-        site_sub:     "Tower A Reception"
-        phone:        "+1 (555) 012-9844"
-        rank:         "Officer"
-        last_active:  "2026-05-29T07:54:00Z"
-    """
-    guards = []
+
+def _get_regions_list(region_map):
+    """Returns (region_id, display_name) tuples for the dropdown."""
+    return [("All Regions", "All Regions")] + sorted(region_map.items(), key=lambda x: x[1])
+
+
+def _fetch_guards(status_filter, region_filter, rank_filter, search, region_map):
+    guards    = []
     all_ranks = set()
-
     try:
         data = db.reference("guards").get() or {}
 
         for uid, g in data.items():
             if not isinstance(g, dict):
                 continue
-
-            rank = g.get("rank", "")
+            rank   = g.get("rank", "")
+            name   = g.get("name", "Unknown")
+            status = g.get("status", "inactive")
+            region = g.get("region", "")   # stored as region_id e.g. "nairobi_cbd"
             if rank:
                 all_ranks.add(rank)
 
-            name    = g.get("name", "Unknown")
-            status  = g.get("status", "inactive")
-            region  = g.get("region", "")
-
-            # ── Filters ──────────────────────────────────────────────────────
-            if status_filter != "All Statuses" and status.lower() != status_filter.lower():
+            # region_filter value comes from the dropdown — it's a region_id
+            if region_filter not in ("All Regions", "", None) and region != region_filter:
                 continue
-            if region_filter != "All Regions" and region != region_filter:
+            if status_filter not in ("All Statuses", "", None) and status.lower() != status_filter.lower():
                 continue
             if rank_filter not in ("All Ranks", "", None) and rank != rank_filter:
                 continue
@@ -90,43 +68,38 @@ def _fetch_guards(status_filter, region_filter, rank_filter, search):
                 "avatar_color": g.get("avatar_color", "#6B7280"),
                 "status":       status,
                 "region":       region,
+                "region_name":  region_map.get(region, region),  # human-readable
                 "site_name":    g.get("site_name"),
                 "site_sub":     g.get("site_sub"),
                 "phone":        g.get("phone", "—"),
                 "rank":         rank,
                 "last_active":  _relative_time(g.get("last_active")),
             })
-
     except Exception as e:
         print(f"[Guards] Firebase error: {e}")
 
     guards.sort(key=lambda g: g["name"])
-    ranks = ["All Ranks"] + sorted(all_ranks)
-    return guards, ranks
+    return guards, ["All Ranks"] + sorted(all_ranks)
 
 
-def _get_summary(guards_data):
-    """Compute bottom summary bar stats from the full unfiltered guard list."""
+def _get_summary():
     try:
-        data = db.reference("guards").get() or {}
-        all_guards = list(data.values()) if isinstance(data, dict) else []
+        data       = db.reference("guards").get() or {}
+        all_guards = [g for g in data.values() if isinstance(g, dict)]
     except Exception:
         all_guards = []
 
-    total_active    = sum(1 for g in all_guards if isinstance(g, dict) and g.get("status") == "active")
-    on_deployment   = sum(1 for g in all_guards if isinstance(g, dict) and g.get("site_name"))
-    vacancies       = sum(1 for g in all_guards if isinstance(g, dict) and not g.get("site_name"))
-    certifications  = sum(1 for g in all_guards if isinstance(g, dict) and g.get("certified"))
-
-    deployment_pct = (
-        round((on_deployment / len(all_guards)) * 100) if all_guards else 0
-    )
+    total_active   = sum(1 for g in all_guards if g.get("status") == "active")
+    on_deployment  = sum(1 for g in all_guards if g.get("site_name"))
+    vacancies      = sum(1 for g in all_guards if not g.get("site_name"))
+    certifications = sum(1 for g in all_guards if g.get("certified"))
+    deployment_pct = round((on_deployment / len(all_guards)) * 100) if all_guards else 0
 
     return {
-        "total_active":    total_active,
-        "deployment_pct":  deployment_pct,
-        "vacancies":       vacancies,
-        "certifications":  certifications,
+        "total_active":   total_active,
+        "deployment_pct": deployment_pct,
+        "vacancies":      vacancies,
+        "certifications": certifications,
     }
 
 
@@ -134,23 +107,25 @@ def _get_summary(guards_data):
 def guards_directory(request):
     status_filter = request.GET.get("status", "All Statuses")
     region_filter = request.GET.get("region", "All Regions")
-    rank_filter   = request.GET.get("rank", "All Ranks")
+    rank_filter   = request.GET.get("rank",   "All Ranks")
     search        = request.GET.get("search", "").strip().lower()
 
-    guards, ranks = _fetch_guards(status_filter, region_filter, rank_filter, search)
-    summary       = _get_summary(guards)
+    region_map    = _get_region_map()
+    guards, ranks = _fetch_guards(status_filter, region_filter, rank_filter, search, region_map)
+    summary       = _get_summary()
+    regions       = _get_regions_list(region_map)
 
     context = {
-        "guards":          guards,
-        "guard_count":     len(guards),
-        "statuses":        STATUSES,
-        "regions":         REGIONS,
-        "ranks":           ranks,
-        "active_status":   status_filter,
-        "active_region":   region_filter,
-        "active_rank":     rank_filter,
-        "search_query":    search,
-        "summary":         summary,
-        "display_name":    request.session.get("display_name", "Admin"),
+        "guards":        guards,
+        "guard_count":   len(guards),
+        "statuses":      ["All Statuses", "active", "on_leave", "urgent", "inactive"],
+        "regions":       regions,
+        "ranks":         ranks,
+        "active_status": status_filter,
+        "active_region": region_filter,
+        "active_rank":   rank_filter,
+        "search_query":  search,
+        "summary":       summary,
+        "display_name":  request.session.get("display_name", "Admin"),
     }
     return render(request, "guards/guards.html", context)

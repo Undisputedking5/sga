@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+{% block title %}Sites Management — SGA Security{% endblock %}
+{% block page_title %}Sites Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ── PAGE HEADER ─────────────────────────────────────────────── -->
+  <div class="flex items-start justify-between">
+    <div>
+      <p class="text-xs text-gray-400 mb-1">Admin &rsaquo; <span class="text-sgaRed font-medium">Sites Management</span></p>
+      <h1 class="text-2xl font-bold text-gray-900">Sites Management</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'sites:export_csv' %}"
+         class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+        <span class="material-icons-outlined text-[16px]">download</span>
+        Export CSV
+      </a>
+      <button onclick="openAddModal()"
+         class="inline-flex items-center gap-2 bg-sgaRed hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+        <span class="material-icons-outlined text-[16px]">add</span>
+        Add Site
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SUMMARY STAT CARDS ──────────────────────────────────────── -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-start justify-between">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Sites</p>
+        <span class="material-icons-outlined text-[20px] text-red-200">grid_view</span>
+      </div>
+      <p class="mt-2 text-4xl font-bold text-gray-900">{{ total_sites }}</p>
+      <p class="mt-1 text-xs text-green-600 font-medium flex items-center gap-1">
+        <span class="material-icons-outlined text-[13px]">trending_up</span>
+        All registered sites
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-start justify-between">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Sites</p>
+        <span class="material-icons-outlined text-[20px] text-red-200">check_circle</span>
+      </div>
+      <p class="mt-2 text-4xl font-bold text-gray-900">{{ active_sites }}</p>
+      <p class="mt-1 text-xs text-gray-500 font-medium">
+        {% if total_sites > 0 %}{{ active_sites|floatformat:0 }} of {{ total_sites }} active{% else %}No sites yet{% endif %}
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-start justify-between">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">QR Generated</p>
+        <span class="material-icons-outlined text-[20px] text-red-200">qr_code_2</span>
+      </div>
+      <p class="mt-2 text-4xl font-bold text-gray-900">{{ qr_generated }}</p>
+      <p class="mt-1 text-xs text-gray-500 font-medium">
+        {% if total_sites > 0 %}
+          {{ qr_generated }} of {{ total_sites }} deployed
+        {% else %}None yet{% endif %}
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-start justify-between">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">QR Pending</p>
+        <span class="material-icons-outlined text-[20px] text-red-200">pending_actions</span>
+      </div>
+      <p class="mt-2 text-4xl font-bold {% if qr_pending > 0 %}text-sgaRed{% else %}text-gray-900{% endif %}">{{ qr_pending }}</p>
+      {% if qr_pending > 0 %}
+      <p class="mt-1 text-xs text-sgaRed font-medium">Action required</p>
+      {% else %}
+      <p class="mt-1 text-xs text-green-600 font-medium">All QRs generated</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ── FILTERS ──────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+    <form method="GET" class="flex flex-wrap items-end gap-4">
+
+      <!-- Search -->
+      <div class="flex-1 min-w-48">
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Search Site</label>
+        <div class="relative">
+          <span class="material-icons-outlined text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 text-[17px]">search</span>
+          <input type="text" name="search" value="{{ search_query }}"
+                 placeholder="Site name or ID code..."
+                 class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        </div>
+      </div>
+
+      <!-- Region filter -->
+      <div class="min-w-44">
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Region</label>
+        <select name="region" onchange="this.form.submit()"
+                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700 appearance-none pr-8"
+                style="background-image: url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.25em;">
+          <option value="">All Regions</option>
+          {% for region in regions %}
+          <option value="{{ region.name }}" {% if region_filter == region.name %}selected{% endif %}>{{ region.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- QR Status filter -->
+      <div class="min-w-44">
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">QR Status</label>
+        <select name="qr_status" onchange="this.form.submit()"
+                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700 appearance-none pr-8"
+                style="background-image: url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.25em;">
+          <option value="">All Statuses</option>
+          <option value="generated" {% if qr_filter == 'generated' %}selected{% endif %}>Generated</option>
+          <option value="pending" {% if qr_filter == 'pending' %}selected{% endif %}>Pending</option>
+        </select>
+      </div>
+
+      <!-- Submit + Clear -->
+      <div class="flex items-center gap-2 pt-5">
+        <button type="submit"
+                class="px-4 py-2 bg-sgaRed text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+          Search
+        </button>
+        {% if search_query or region_filter or qr_filter %}
+        <a href="{% url 'sites:sites' %}"
+           class="p-2 text-gray-400 hover:text-sgaRed transition-colors" title="Clear filters">
+          <span class="material-icons-outlined text-[18px]">filter_alt_off</span>
+        </a>
+        {% endif %}
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ── SITES TABLE ──────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+    {% if sites %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 bg-gray-50/60">
+            <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Site Name</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Code</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Region</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Location (Lat/Lng)</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">QR Status</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Date Added</th>
+            <th class="text-right px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for site in sites %}
+          <tr class="hover:bg-gray-50/50 transition-colors">
+
+            <!-- Site Name -->
+            <td class="px-6 py-4">
+              <p class="font-semibold text-gray-900">{{ site.name }}</p>
+            </td>
+
+            <!-- Code badge -->
+            <td class="px-4 py-4">
+              <span class="inline-block bg-red-50 text-sgaRed text-xs font-bold px-2.5 py-1 rounded-md tracking-wide">
+                {{ site.site_code }}
+              </span>
+            </td>
+
+            <!-- Region -->
+            <td class="px-4 py-4 text-gray-600">{{ site.region }}</td>
+
+            <!-- Coordinates -->
+            <td class="px-4 py-4 font-mono text-xs text-gray-500">
+              {{ site.lat }},<br>{{ site.lng }}
+            </td>
+
+            <!-- QR Status -->
+            <td class="px-4 py-4">
+              {% if site.qr_generated %}
+              <span class="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                GENERATED
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 bg-red-50 text-sgaRed text-xs font-semibold px-2.5 py-1 rounded-full">
+                <span class="w-1.5 h-1.5 bg-sgaRed rounded-full"></span>
+                PENDING
+              </span>
+              {% endif %}
+            </td>
+
+            <!-- Date Added -->
+            <td class="px-4 py-4 text-gray-500 text-xs">{{ site.created_at }}</td>
+
+            <!-- Actions -->
+            <td class="px-6 py-4">
+              <div class="flex items-center justify-end gap-1">
+                <!-- Generate / View QR -->
+                <button onclick="handleQR('{{ site.id }}', '{{ site.name }}', {{ site.qr_generated|yesno:'true,false' }})"
+                        class="p-2 rounded-lg text-gray-400 hover:text-sgaRed hover:bg-red-50 transition-colors"
+                        title="{% if site.qr_generated %}View QR{% else %}Generate QR{% endif %}">
+                  <span class="material-icons-outlined text-[18px]">{% if site.qr_generated %}qr_code_2{% else %}qr_code{% endif %}</span>
+                </button>
+                <!-- Edit (placeholder) -->
+                <button class="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Edit site">
+                  <span class="material-icons-outlined text-[18px]">edit</span>
+                </button>
+                <!-- Delete -->
+                <button onclick="confirmDelete('{{ site.id }}', '{{ site.name }}')"
+                        class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete site">
+                  <span class="material-icons-outlined text-[18px]">delete_outline</span>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/40">
+      <p class="text-xs text-gray-500">
+        Showing {{ sites|length }} of {{ total_filtered }} site{{ total_filtered|pluralize }}
+      </p>
+      {% if total_pages > 1 %}
+      <div class="flex items-center gap-1">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:'-1' }}&search={{ search_query }}&region={{ region_filter }}&qr_status={{ qr_filter }}"
+           class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <span class="material-icons-outlined text-[18px]">chevron_left</span>
+        </a>
+        {% endif %}
+        {% for p in total_pages|rjust:total_pages %}{% endfor %}
+        {% for i in "x"|rjust:total_pages %}
+          {% with forloop.counter as pnum %}
+          <a href="?page={{ pnum }}&search={{ search_query }}&region={{ region_filter }}&qr_status={{ qr_filter }}"
+             class="w-8 h-8 flex items-center justify-center text-xs font-medium rounded-lg transition-colors
+                    {% if pnum == page %}bg-sgaRed text-white{% else %}text-gray-500 hover:bg-gray-100{% endif %}">
+            {{ pnum }}
+          </a>
+          {% endwith %}
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="?page={{ page|add:'1' }}&search={{ search_query }}&region={{ region_filter }}&qr_status={{ qr_filter }}"
+           class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <span class="material-icons-outlined text-[18px]">chevron_right</span>
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="py-16 text-center">
+      <span class="material-icons-outlined text-[48px] text-gray-200">location_city</span>
+      <p class="mt-3 text-gray-500 font-medium">No sites found</p>
+      <p class="text-sm text-gray-400 mt-1">
+        {% if search_query or region_filter or qr_filter %}
+          Try adjusting your filters.
+        {% else %}
+          Add your first site to get started.
+        {% endif %}
+      </p>
+      {% if not search_query and not region_filter and not qr_filter %}
+      <button onclick="openAddModal()"
+              class="mt-4 inline-flex items-center gap-2 bg-sgaRed text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+        <span class="material-icons-outlined text-[16px]">add</span>
+        Add First Site
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+</div><!-- end space-y-6 -->
+
+
+<!-- ── ADD SITE MODAL ────────────────────────────────────────────── -->
+<div id="addSiteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 class="text-base font-semibold text-gray-900">Add New Site</h3>
+      <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <span class="material-icons-outlined text-[20px]">close</span>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Site Name <span class="text-sgaRed">*</span></label>
+          <input type="text" id="addName" placeholder="e.g. Harbor Plaza"
+                 class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Site Code <span class="text-sgaRed">*</span></label>
+          <input type="text" id="addCode" placeholder="e.g. HPC-042"
+                 class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 uppercase">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Region <span class="text-sgaRed">*</span></label>
+        <select id="addRegion"
+                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700">
+          <option value="">Select region...</option>
+          {% for region in regions %}
+          <option value="{{ region.name }}">{{ region.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Latitude <span class="text-sgaRed">*</span></label>
+          <input type="number" id="addLat" placeholder="-1.2921" step="any"
+                 class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Longitude <span class="text-sgaRed">*</span></label>
+          <input type="number" id="addLng" placeholder="36.8219" step="any"
+                 class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+      </div>
+
+      <div id="addError" class="hidden text-xs text-sgaRed bg-red-50 rounded-lg px-3 py-2"></div>
+
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+      <button onclick="closeAddModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitAddSite()"
+              class="px-5 py-2 text-sm font-medium text-white bg-sgaRed hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2">
+        <span class="material-icons-outlined text-[16px]">add_location_alt</span>
+        Add Site
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── QR CODE MODAL ─────────────────────────────────────────────── -->
+<div id="qrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div>
+        <h3 class="text-base font-semibold text-gray-900" id="qrModalTitle">Site QR Code</h3>
+        <p class="text-xs text-gray-400 mt-0.5" id="qrModalCode"></p>
+      </div>
+      <button onclick="closeQRModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <span class="material-icons-outlined text-[20px]">close</span>
+      </button>
+    </div>
+    <div class="px-6 py-6 text-center">
+      <!-- Loading state -->
+      <div id="qrLoading" class="hidden flex flex-col items-center gap-3 py-8">
+        <div class="w-8 h-8 border-2 border-sgaRed border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-500">Generating QR code...</p>
+      </div>
+      <!-- QR image -->
+      <div id="qrImageWrap" class="hidden">
+        <div class="inline-block p-3 border-2 border-gray-100 rounded-xl">
+          <img id="qrImage" src="" alt="Site QR Code" class="w-48 h-48 mx-auto">
+        </div>
+        <p class="mt-3 text-xs text-gray-400">Guards scan this QR to clock in/out at this site</p>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-between gap-3">
+      <button onclick="closeQRModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+        Close
+      </button>
+      <div class="flex gap-2">
+        <button onclick="downloadQR()"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors flex items-center gap-1.5">
+          <span class="material-icons-outlined text-[15px]">download</span>
+          Download
+        </button>
+        <button onclick="printQR()"
+                class="px-4 py-2 text-sm font-medium text-white bg-sgaRed hover:bg-red-700 rounded-lg transition-colors flex items-center gap-1.5">
+          <span class="material-icons-outlined text-[15px]">print</span>
+          Print
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────── -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="px-6 py-6 text-center">
+      <div class="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <span class="material-icons-outlined text-sgaRed text-[24px]">delete_outline</span>
+      </div>
+      <h3 class="text-base font-semibold text-gray-900">Delete Site?</h3>
+      <p class="mt-2 text-sm text-gray-500">
+        Are you sure you want to delete <strong id="deleteSiteName" class="text-gray-800"></strong>?
+        This action cannot be undone.
+      </p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-center gap-3">
+      <button onclick="closeDeleteModal()"
+              class="px-5 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitDelete()"
+              class="px-5 py-2 text-sm font-medium text-white bg-sgaRed hover:bg-red-700 rounded-lg transition-colors">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  const CSRF_TOKEN = '{{ csrf_token }}';
+  let deleteSiteId = null;
+  let currentQRImage = null;
+  let currentQRSiteName = null;
+
+  // ── ADD MODAL ────────────────────────────────────────────────────
+  function openAddModal() {
+    document.getElementById('addSiteModal').classList.remove('hidden');
+  }
+  function closeAddModal() {
+    document.getElementById('addSiteModal').classList.add('hidden');
+    document.getElementById('addError').classList.add('hidden');
+    ['addName','addCode','addLat','addLng'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('addRegion').value = '';
+  }
+  async function submitAddSite() {
+    const name   = document.getElementById('addName').value.trim();
+    const code   = document.getElementById('addCode').value.trim();
+    const region = document.getElementById('addRegion').value;
+    const lat    = document.getElementById('addLat').value;
+    const lng    = document.getElementById('addLng').value;
+    const errEl  = document.getElementById('addError');
+
+    if (!name || !code || !region || !lat || !lng) {
+      errEl.textContent = 'All fields are required.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const body = new FormData();
+    body.append('name', name);
+    body.append('site_code', code);
+    body.append('region', region);
+    body.append('lat', lat);
+    body.append('lng', lng);
+
+    try {
+      const res  = await fetch("{% url 'sites:add_site' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+        body,
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        errEl.textContent = data.error || 'Something went wrong.';
+        errEl.classList.remove('hidden');
+      }
+    } catch (e) {
+      errEl.textContent = 'Network error. Please try again.';
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  // ── QR MODAL ─────────────────────────────────────────────────────
+  async function handleQR(siteId, siteName, alreadyGenerated) {
+    document.getElementById('qrModal').classList.remove('hidden');
+    document.getElementById('qrModalTitle').textContent = siteName + ' QR Code';
+    document.getElementById('qrModalCode').textContent = alreadyGenerated ? 'Previously generated' : 'Generating now...';
+    document.getElementById('qrLoading').classList.remove('hidden');
+    document.getElementById('qrImageWrap').classList.add('hidden');
+    currentQRSiteName = siteName;
+
+    try {
+      const res  = await fetch(`/sites/generate-qr/${siteId}/`, {
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+      });
+      const data = await res.json();
+      if (data.success) {
+        const img = document.getElementById('qrImage');
+        img.src = 'data:image/png;base64,' + data.qr_image;
+        currentQRImage = data.qr_image;
+        document.getElementById('qrModalCode').textContent = data.site_code;
+        document.getElementById('qrLoading').classList.add('hidden');
+        document.getElementById('qrImageWrap').classList.remove('hidden');
+      } else {
+        closeQRModal();
+        alert('QR generation failed: ' + data.error);
+      }
+    } catch (e) {
+      closeQRModal();
+      alert('Network error.');
+    }
+  }
+  function closeQRModal() {
+    document.getElementById('qrModal').classList.add('hidden');
+    currentQRImage = null;
+  }
+  function downloadQR() {
+    if (!currentQRImage) return;
+    const a = document.createElement('a');
+    a.href = 'data:image/png;base64,' + currentQRImage;
+    a.download = (currentQRSiteName || 'site') + '_QR.png';
+    a.click();
+  }
+  function printQR() {
+    if (!currentQRImage) return;
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>Print QR</title></head>
+      <body style="text-align:center;padding:40px;">
+        <h2 style="font-family:sans-serif;">${currentQRSiteName}</h2>
+        <img src="data:image/png;base64,${currentQRImage}" style="width:300px;height:300px;">
+        <p style="font-family:sans-serif;color:#666;font-size:12px;">SGA Security — Site QR Code</p>
+      </body></html>
+    `);
+    win.document.close();
+    win.print();
+  }
+
+  // ── DELETE MODAL ─────────────────────────────────────────────────
+  function confirmDelete(siteId, siteName) {
+    deleteSiteId = siteId;
+    document.getElementById('deleteSiteName').textContent = siteName;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    deleteSiteId = null;
+  }
+  async function submitDelete() {
+    if (!deleteSiteId) return;
+    try {
+      const res  = await fetch(`/sites/delete/${deleteSiteId}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert('Delete failed: ' + data.error);
+      }
+    } catch (e) {
+      alert('Network error.');
+    }
+    closeDeleteModal();
+  }
+
+  // Close modals on backdrop click
+  ['addSiteModal','qrModal','deleteModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) this.classList.add('hidden');
+    });
+  });
+</script>
+
+{% endblock %}

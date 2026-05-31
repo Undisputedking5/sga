@@ -56,8 +56,8 @@
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Region</label>
           <select name="region" onchange="this.form.submit()"
             class="pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[150px]">
-            {% for r in regions %}
-            <option value="{{ r }}" {% if active_region == r %}selected{% endif %}>{{ r }}</option>
+            {% for rid, rname in regions %}
+            <option value="{{ rid }}" {% if active_region == rid %}selected{% endif %}>{{ rname }}</option>
             {% endfor %}
           </select>
         </div>
@@ -163,7 +163,7 @@
               </td>
 
               <!-- Region -->
-              <td class="px-4 py-4 text-gray-700">{{ guard.region|default:"—" }}</td>
+              <td class="px-4 py-4 text-gray-700">{{ guard.region_name|default:guard.region|default:"—" }}</td>
 
               <!-- Assigned Site -->
               <td class="px-4 py-4">
