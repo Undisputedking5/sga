@@ -79,6 +79,7 @@ def settings_view(request):
         'timezones': timezones,
         'email_toggles': email_toggles,
         'push_toggles': push_toggles,
+        'active_nav': 'settings',
     }
     return render(request, 'settings/settings.html', context)
 
@@ -130,7 +131,7 @@ def reset_password(request):
 @login_required
 def update_system(request):
     if request.method != 'POST':
-        return redirect('settings:index?tab=system')
+        return redirect('/settings/?tab=system')
 
     try:
         data = {
@@ -146,13 +147,13 @@ def update_system(request):
     except Exception as e:
         messages.error(request, f'Failed to save system settings: {e}')
 
-    return redirect('settings:index?tab=system')
+    return redirect('/settings/?tab=system')
 
 
 @login_required
 def update_security(request):
     if request.method != 'POST':
-        return redirect('settings:index?tab=security')
+        return redirect('/settings/?tab=security')
 
     try:
         data = {
@@ -167,13 +168,13 @@ def update_security(request):
     except Exception as e:
         messages.error(request, f'Failed to save security settings: {e}')
 
-    return redirect('settings:index?tab=security')
+    return redirect('/settings/?tab=security')
 
 
 @login_required
 def update_notifications(request):
     if request.method != 'POST':
-        return redirect('settings:index?tab=notifications')
+        return redirect('/settings/?tab=notifications')
 
     uid = request.session.get('uid')
     try:
@@ -190,7 +191,7 @@ def update_notifications(request):
     except Exception as e:
         messages.error(request, f'Failed to save notifications: {e}')
 
-    return redirect('settings:index?tab=notifications')
+    return redirect('/settings/?tab=notifications')
 
 
 from django.shortcuts import render

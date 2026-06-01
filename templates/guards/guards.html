@@ -24,13 +24,13 @@
           total personnel across all operational sectors.
         </p>
       </div>
-      <a href="#"
+      <button onclick="document.getElementById('addGuardModal').classList.remove('hidden')"
          class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors tracking-wide">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
         </svg>
         ADD NEW GUARD
-      </a>
+      </button>
     </div>
   </div>
 
@@ -210,13 +210,13 @@
                     </button>
                     <div id="gmenu-{{ guard.uid }}"
                       class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1">
-                      <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <a href="/attendance/?search={{ guard.name }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
                         View Attendance
                       </a>
-                      <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <a href="/sites/" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                           <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -224,12 +224,12 @@
                         Reassign Site
                       </a>
                       <div class="border-t border-gray-100 my-1"></div>
-                      <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                      <button onclick="deactivateGuard('{{ guard.uid }}')" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                         </svg>
                         Deactivate
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -309,3 +309,106 @@
   });
 </script>
 {% endblock %}
+<!-- ── ADD GUARD MODAL ──────────────────────────────────────────── -->
+<div id="addGuardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 class="text-base font-semibold text-gray-900">Add New Guard</h3>
+      <button onclick="document.getElementById('addGuardModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Full Name <span class="text-red-600">*</span></label>
+          <input type="text" id="gName" placeholder="e.g. John Doe" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Guard ID <span class="text-red-600">*</span></label>
+          <input type="text" id="gGuardId" placeholder="e.g. SGA-0042" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Phone</label>
+          <input type="text" id="gPhone" placeholder="+254 7XX XXX XXX" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Rank</label>
+          <input type="text" id="gRank" placeholder="e.g. Senior Guard" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Region <span class="text-red-600">*</span></label>
+        <select id="gRegion" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+          <option value="">Select region...</option>
+          {% for rid, rname in regions %}
+          <option value="{{ rid }}">{{ rname }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="gError" class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+      <button onclick="document.getElementById('addGuardModal').classList.add('hidden')"
+        class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
+      <button onclick="submitAddGuard()"
+        class="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Add Guard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF_GUARDS = '{{ csrf_token }}';
+
+async function submitAddGuard() {
+  const name    = document.getElementById('gName').value.trim();
+  const guardId = document.getElementById('gGuardId').value.trim();
+  const phone   = document.getElementById('gPhone').value.trim();
+  const rank    = document.getElementById('gRank').value.trim();
+  const region  = document.getElementById('gRegion').value;
+  const errEl   = document.getElementById('gError');
+
+  if (!name || !guardId || !region) {
+    errEl.textContent = 'Name, Guard ID, and Region are required.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const body = new FormData();
+  body.append('name', name);
+  body.append('guard_id', guardId);
+  body.append('phone', phone);
+  body.append('rank', rank);
+  body.append('region', region);
+
+  try {
+    const res  = await fetch('/guards/add/', { method: 'POST', headers: { 'X-CSRFToken': CSRF_GUARDS }, body });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      errEl.textContent = data.error || 'Something went wrong.';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error.';
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function deactivateGuard(uid) {
+  if (!confirm('Deactivate this guard?')) return;
+  try {
+    const res  = await fetch(`/guards/deactivate/${uid}/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF_GUARDS } });
+    const data = await res.json();
+    if (data.success) window.location.reload();
+    else alert('Failed: ' + data.error);
+  } catch (e) { alert('Network error.'); }
+}
+
+document.getElementById('addGuardModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+</script>

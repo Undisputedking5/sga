@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from datetime import datetime, timezone
-from firebase_admin import db
+from core.firebase import db
 from core.decorators import login_required
 
 
@@ -129,3 +129,48 @@ def guards_directory(request):
         "display_name":  request.session.get("display_name", "Admin"),
     }
     return render(request, "guards/guards.html", context)
+
+import uuid
+from datetime import datetime
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+
+@login_required
+@require_POST
+def add_guard(request):
+    try:
+        name     = request.POST.get('name', '').strip()
+        guard_id = request.POST.get('guard_id', '').strip().upper()
+        phone    = request.POST.get('phone', '').strip()
+        rank     = request.POST.get('rank', '').strip()
+        region   = request.POST.get('region', '').strip()
+
+        if not name or not guard_id or not region:
+            return JsonResponse({'success': False, 'error': 'Name, Guard ID, and Region are required.'})
+
+        uid = f"guard_{uuid.uuid4().hex[:12]}"
+        db.reference(f'/guards/{uid}').set({
+            'name':        name,
+            'guard_id':    guard_id,
+            'initials':    ''.join(w[0].upper() for w in name.split()[:2]),
+            'phone':       phone,
+            'rank':        rank,
+            'region':      region,
+            'status':      'active',
+            'certified':   False,
+            'last_active': datetime.utcnow().isoformat() + 'Z',
+        })
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_POST
+def deactivate_guard(request, uid):
+    try:
+        db.reference(f'/guards/{uid}').update({'status': 'inactive'})
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

@@ -126,6 +126,7 @@ def regions_view(request):
         'status_filter': status_filter,
         'search_query': search_query,
         'page_title': 'Regions',
+        'active_nav': 'regions',
     }
     return render(request, 'regions/regions.html', context)
 

@@ -156,6 +156,7 @@ def reports_view(request):
         'date_to': date_to,
         'search_query': search_query,
         'page_title': 'Reports',
+        'active_nav': 'reports',
     }
     return render(request, 'reports/reports.html', context)
 

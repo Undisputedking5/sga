@@ -1,11 +1,12 @@
 from django.shortcuts import render
+from django.http import HttpResponse
 from datetime import date, timedelta
-from firebase_admin import db
+from core.firebase import db
 from core.decorators import login_required
+import csv
 
 
 def _get_regions_list():
-    """Returns list of (region_id, display_name) tuples for the filter dropdown."""
     try:
         data = db.reference("regions").get() or {}
         items = [(rid, r.get("name", rid)) for rid, r in data.items() if isinstance(r, dict)]
@@ -26,15 +27,6 @@ def _get_date_range(range_key):
 
 
 def _build_records(date_start, date_end, region_filter, status_filter, search):
-    """
-    Pull from Firebase. Expected structure:
-
-    /guards/{uid}/
-        name, initials, avatar_url, avatar_color
-
-    /attendance/{uid}/{date}/
-        clock_in, clock_out, status, site, region, shift_start, shift_end
-    """
     records = []
     try:
         attendance_data = db.reference("attendance").get() or {}
@@ -56,7 +48,8 @@ def _build_records(date_start, date_end, region_filter, status_filter, search):
                 site   = rec.get("site", "")
                 name   = guard.get("name", "Unknown Guard")
 
-                if region_filter != "All Regions" and region != region_filter:
+                # region_filter is a region_id; also try matching display name
+                if region_filter != "All Regions" and region not in (region_filter,):
                     continue
                 if status_filter != "all" and status != status_filter:
                     continue
@@ -65,6 +58,7 @@ def _build_records(date_start, date_end, region_filter, status_filter, search):
 
                 records.append({
                     "id":           f"{uid}_{record_date}",
+                    "uid":          uid,
                     "name":         name,
                     "initials":     guard.get("initials", name[:2].upper()),
                     "avatar_url":   guard.get("avatar_url"),
@@ -120,12 +114,23 @@ def attendance_log(request):
     search     = request.GET.get("search", "").strip().lower()
 
     date_start, date_end = _get_date_range(date_range)
-    records = _build_records(date_start, date_end, region, status, search)
-    summary = _get_summary()
+    records  = _build_records(date_start, date_end, region, status, search)
+    summary  = _get_summary()
+    regions  = _get_regions_list()
+
+    # Pagination
+    page     = max(1, int(request.GET.get("page", 1)))
+    per_page = 20
+    total    = len(records)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page        = min(page, total_pages)
+    start       = (page - 1) * per_page
+    page_records = records[start:start + per_page]
+    page_range   = list(range(max(1, page - 2), min(total_pages + 1, page + 3)))
 
     context = {
-        "records":        records,
-        "regions":        _get_regions_list(),
+        "records":        page_records,
+        "regions":        regions,
         "today":          date.today().strftime("%B %d, %Y"),
         "date_options":   [("Today", "today"), ("Yesterday", "yesterday"), ("Last 7 Days", "week")],
         "status_options": [("All", "all"), ("On Time", "on_time"), ("Late", "late"), ("Absent", "absent")],
@@ -137,7 +142,38 @@ def attendance_log(request):
         "checked_in":     summary["checked_in"],
         "late_count":     summary["late_count"],
         "absent_count":   summary["absent_count"],
-        "record_count":   len(records),
+        "record_count":   total,
         "display_name":   request.session.get("display_name", "Admin"),
+        "page":           page,
+        "total_pages":    total_pages,
+        "page_range":     page_range,
+        "start_idx":      start + 1,
+        "end_idx":        min(start + per_page, total),
+        "active_nav":     "attendance",
     }
     return render(request, "attendance/attendance.html", context)
+
+
+@login_required
+def export_attendance_csv(request):
+    date_range = request.GET.get("date_range", "today")
+    region     = request.GET.get("region", "All Regions")
+    status     = request.GET.get("status", "all")
+    search     = request.GET.get("search", "").strip().lower()
+
+    date_start, date_end = _get_date_range(date_range)
+    records = _build_records(date_start, date_end, region, status, search)
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="sga_attendance.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Guard Name", "Site", "Region", "Date", "Shift Start", "Shift End",
+                     "Clock In", "Clock Out", "Status"])
+    for r in records:
+        writer.writerow([
+            r["name"], r["site"], r["region"], r["date"],
+            r["shift_start"], r["shift_end"],
+            r["clock_in"] or "--", r["clock_out"] or "--",
+            r["status"],
+        ])
+    return response

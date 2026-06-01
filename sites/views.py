@@ -126,6 +126,8 @@ def sites_view(request):
     start = (page - 1) * per_page
     paginated_sites = filtered_sites[start:start + per_page]
 
+    page_range = list(range(max(1, page - 2), min(total_pages + 1, page + 3)))
+
     context = {
         'sites': paginated_sites,
         'total_sites': total_sites,
@@ -138,6 +140,7 @@ def sites_view(request):
         'qr_filter': qr_filter,
         'page': page,
         'total_pages': total_pages,
+        'page_range': page_range,
         'total_filtered': len(filtered_sites),
         'active_nav': 'sites',
         'page_title': 'Sites Management',
