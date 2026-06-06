@@ -2,6 +2,13 @@ from django.shortcuts import render
 from datetime import datetime, timezone
 from core.firebase import db
 from core.decorators import login_required
+import uuid
+from datetime import datetime
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from firebase_admin import auth as firebase_auth
+from core.firebase import db
+
 
 
 def _relative_time(iso_str):
@@ -145,26 +152,64 @@ def add_guard(request):
         phone    = request.POST.get('phone', '').strip()
         rank     = request.POST.get('rank', '').strip()
         region   = request.POST.get('region', '').strip()
+        email    = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '').strip()
+        role     = request.POST.get('role', 'guard').strip()  # 'guard' or 'manager'
 
-        if not name or not guard_id or not region:
-            return JsonResponse({'success': False, 'error': 'Name, Guard ID, and Region are required.'})
+        if not name or not guard_id or not region or not email or not password:
+            return JsonResponse({
+                'success': False,
+                'error': 'Name, Guard ID, Region, Email, and Password are required.'
+            })
 
-        uid = f"guard_{uuid.uuid4().hex[:12]}"
+        if role not in ('guard', 'manager'):
+            return JsonResponse({'success': False, 'error': 'Invalid role.'})
+
+        if len(password) < 6:
+            return JsonResponse({
+                'success': False,
+                'error': 'Password must be at least 6 characters.'
+            })
+
+        # Step 1 — Create Firebase Auth user (real UID)
+        try:
+            firebase_user = firebase_auth.create_user(
+                email=email,
+                password=password,
+                display_name=name,
+            )
+            uid = firebase_user.uid
+        except firebase_auth.EmailAlreadyExistsError:
+            return JsonResponse({
+                'success': False,
+                'error': f'A user with email {email} already exists.'
+            })
+
+        # Step 2 — Write to /guards/{uid} using the real Firebase Auth UID
+        initials = ''.join(w[0].upper() for w in name.split()[:2])
         db.reference(f'/guards/{uid}').set({
             'name':        name,
             'guard_id':    guard_id,
-            'initials':    ''.join(w[0].upper() for w in name.split()[:2]),
+            'initials':    initials,
+            'email':       email,
             'phone':       phone,
             'rank':        rank,
             'region':      region,
+            'role':        role,
             'status':      'active',
             'certified':   False,
             'last_active': datetime.utcnow().isoformat() + 'Z',
+            'avatar_color': '#B7131A',
         })
-        return JsonResponse({'success': True})
+
+        return JsonResponse({
+            'success': True,
+            'uid': uid,
+            'message': f'{role.title()} {name} created successfully.'
+        })
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
-
 
 @login_required
 @require_POST

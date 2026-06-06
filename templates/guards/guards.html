@@ -10,7 +10,6 @@
   <div class="bg-white border-b border-gray-200 px-8 py-5">
     <div class="flex items-start justify-between">
       <div>
-        <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
           <span>Admin</span>
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -39,8 +38,6 @@
     <!-- ── FILTER CARD ─────────────────────────────────────────────────────── -->
     <div class="bg-white border border-gray-200 rounded-xl p-5">
       <form method="get" id="filter-form" class="flex flex-wrap items-end gap-4">
-
-        <!-- Status -->
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</label>
           <select name="status" onchange="this.form.submit()"
@@ -50,8 +47,6 @@
             {% endfor %}
           </select>
         </div>
-
-        <!-- Region -->
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Region</label>
           <select name="region" onchange="this.form.submit()"
@@ -61,8 +56,6 @@
             {% endfor %}
           </select>
         </div>
-
-        <!-- Rank -->
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rank</label>
           <select name="rank" onchange="this.form.submit()"
@@ -72,8 +65,6 @@
             {% endfor %}
           </select>
         </div>
-
-        <!-- Search -->
         <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Search</label>
           <div class="relative">
@@ -85,8 +76,6 @@
               class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"/>
           </div>
         </div>
-
-        <!-- Clear Filters -->
         <a href="{% url 'guards:directory' %}"
            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors pb-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -94,7 +83,6 @@
           </svg>
           Clear Filters
         </a>
-
       </form>
     </div>
 
@@ -114,11 +102,8 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-
             {% for guard in guards %}
             <tr class="hover:bg-gray-50 transition-colors">
-
-              <!-- Personnel -->
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                   {% if guard.avatar_url %}
@@ -136,71 +121,44 @@
                   </div>
                 </div>
               </td>
-
-              <!-- Status Badge -->
               <td class="px-4 py-4">
                 {% if guard.status == "active" %}
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-green-300 text-green-700 bg-green-50 tracking-wide">
-                    ACTIVE
-                  </span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-green-300 text-green-700 bg-green-50 tracking-wide">ACTIVE</span>
                 {% elif guard.status == "on_leave" %}
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-yellow-300 text-yellow-700 bg-yellow-50 tracking-wide">
-                    ON LEAVE
-                  </span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-yellow-300 text-yellow-700 bg-yellow-50 tracking-wide">ON LEAVE</span>
                 {% elif guard.status == "urgent" %}
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-600 text-white tracking-wide">
-                    URGENT
-                  </span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-600 text-white tracking-wide">URGENT</span>
                 {% elif guard.status == "inactive" %}
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-gray-300 text-gray-500 bg-gray-50 tracking-wide">
-                    INACTIVE
-                  </span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-gray-300 text-gray-500 bg-gray-50 tracking-wide">INACTIVE</span>
                 {% else %}
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200 text-gray-400 tracking-wide">
-                    {{ guard.status|upper }}
-                  </span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200 text-gray-400 tracking-wide">{{ guard.status|upper }}</span>
                 {% endif %}
               </td>
-
-              <!-- Region -->
               <td class="px-4 py-4 text-gray-700">{{ guard.region_name|default:guard.region|default:"—" }}</td>
-
-              <!-- Assigned Site -->
               <td class="px-4 py-4">
                 {% if guard.site_name %}
                   <p class="font-semibold text-gray-900">{{ guard.site_name }}</p>
-                  {% if guard.site_sub %}
-                    <p class="text-xs text-gray-400 mt-0.5">{{ guard.site_sub }}</p>
-                  {% endif %}
+                  {% if guard.site_sub %}<p class="text-xs text-gray-400 mt-0.5">{{ guard.site_sub }}</p>{% endif %}
                 {% else %}
                   <p class="text-sm italic text-gray-400">Not Assigned</p>
                   <p class="text-xs text-gray-400 mt-0.5">Awaiting Site</p>
                 {% endif %}
               </td>
-
-              <!-- Contact -->
               <td class="px-4 py-4 text-gray-700 whitespace-nowrap">{{ guard.phone }}</td>
-
-              <!-- Last Active -->
               <td class="px-4 py-4 text-gray-500 text-xs whitespace-nowrap">{{ guard.last_active }}</td>
-
-              <!-- Actions -->
               <td class="px-4 py-4">
                 <div class="flex items-center gap-2">
-                  <!-- View -->
                   <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="View Profile">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                   </button>
-                  <!-- Edit -->
                   <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Edit Guard">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                   </button>
-                  <!-- More -->
                   <div class="relative">
                     <button onclick="toggleMenu('gmenu-{{ guard.uid }}')"
                       class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="More">
@@ -234,7 +192,6 @@
                   </div>
                 </div>
               </td>
-
             </tr>
             {% empty %}
             <tr>
@@ -247,21 +204,16 @@
               </td>
             </tr>
             {% endfor %}
-
           </tbody>
         </table>
       </div>
 
       <!-- ── SUMMARY BAR ────────────────────────────────────────────────────── -->
       <div class="border-t border-gray-100 grid grid-cols-4 divide-x divide-gray-100">
-
         <div class="px-6 py-4">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total Active</p>
-          <div class="flex items-baseline gap-2">
-            <span class="text-2xl font-bold text-gray-900">{{ summary.total_active }}</span>
-          </div>
+          <span class="text-2xl font-bold text-gray-900">{{ summary.total_active }}</span>
         </div>
-
         <div class="px-6 py-4">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">On Deployment</p>
           <div class="flex items-baseline gap-2">
@@ -269,17 +221,13 @@
             <span class="text-xs text-gray-400">Nominal</span>
           </div>
         </div>
-
         <div class="px-6 py-4">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Vacancies</p>
           <div class="flex items-baseline gap-2">
             <span class="text-2xl font-bold text-gray-900">{{ summary.vacancies }}</span>
-            {% if summary.vacancies > 0 %}
-            <span class="text-xs font-semibold text-orange-500">Hiring</span>
-            {% endif %}
+            {% if summary.vacancies > 0 %}<span class="text-xs font-semibold text-orange-500">Hiring</span>{% endif %}
           </div>
         </div>
-
         <div class="px-6 py-4">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Certifications</p>
           <div class="flex items-baseline gap-2">
@@ -287,94 +235,162 @@
             <span class="text-xs text-gray-400">Verified</span>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 </div>
 
-<script>
-  function toggleMenu(id) {
-    const menu = document.getElementById(id);
-    document.querySelectorAll('[id^="gmenu-"]').forEach(m => {
-      if (m.id !== id) m.classList.add('hidden');
-    });
-    menu.classList.toggle('hidden');
-  }
-
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('[id^="gmenu-"]') && !e.target.closest('button[onclick]')) {
-      document.querySelectorAll('[id^="gmenu-"]').forEach(m => m.classList.add('hidden'));
-    }
-  });
-</script>
-{% endblock %}
-<!-- ── ADD GUARD MODAL ──────────────────────────────────────────── -->
+<!-- ── ADD GUARD MODAL (inside block content) ─────────────────────────────── -->
 <div id="addGuardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-      <h3 class="text-base font-semibold text-gray-900">Add New Guard</h3>
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
+      <h3 class="text-base font-semibold text-gray-900">Add New Guard / Manager</h3>
       <button onclick="document.getElementById('addGuardModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
       </button>
     </div>
+
+    <!-- Modal Body -->
     <div class="px-6 py-5 space-y-4">
+
+      <!-- Name + Guard ID -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">Full Name <span class="text-red-600">*</span></label>
-          <input type="text" id="gName" placeholder="e.g. John Doe" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <input type="text" id="gName" placeholder="e.g. John Doe"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">Guard ID <span class="text-red-600">*</span></label>
-          <input type="text" id="gGuardId" placeholder="e.g. SGA-0042" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <input type="text" id="gGuardId" placeholder="e.g. SGA-0042"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
       </div>
+
+      <!-- Phone + Rank -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">Phone</label>
-          <input type="text" id="gPhone" placeholder="+254 7XX XXX XXX" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <input type="text" id="gPhone" placeholder="+254 7XX XXX XXX"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">Rank</label>
-          <input type="text" id="gRank" placeholder="e.g. Senior Guard" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <input type="text" id="gRank" placeholder="e.g. Senior Guard"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
       </div>
+
+      <!-- Region -->
       <div>
         <label class="block text-xs font-semibold text-gray-500 mb-1.5">Region <span class="text-red-600">*</span></label>
-        <select id="gRegion" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+        <select id="gRegion"
+          class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
           <option value="">Select region...</option>
           {% for rid, rname in regions %}
           <option value="{{ rid }}">{{ rname }}</option>
           {% endfor %}
         </select>
       </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Email Address <span class="text-red-600">*</span></label>
+        <input type="email" id="gEmail" placeholder="guard@sgasecurity.com"
+          class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Temporary Password <span class="text-red-600">*</span></label>
+        <input type="password" id="gPassword" placeholder="Min. 6 characters" minlength="6"
+          class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+
+      <!-- Role -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Role <span class="text-red-600">*</span></label>
+        <select id="gRole"
+          class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+          <option value="guard">Guard</option>
+          <option value="manager">Manager</option>
+        </select>
+      </div>
+
+      <!-- Error -->
       <div id="gError" class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+
     </div>
-    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
       <button onclick="document.getElementById('addGuardModal').classList.add('hidden')"
-        class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
-      <button onclick="submitAddGuard()"
-        class="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Add Guard</button>
+        class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitAddGuard()" id="gSubmitBtn"
+        class="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+        Add Guard
+      </button>
     </div>
+
   </div>
 </div>
 
 <script>
 const CSRF_GUARDS = '{{ csrf_token }}';
 
-async function submitAddGuard() {
-  const name    = document.getElementById('gName').value.trim();
-  const guardId = document.getElementById('gGuardId').value.trim();
-  const phone   = document.getElementById('gPhone').value.trim();
-  const rank    = document.getElementById('gRank').value.trim();
-  const region  = document.getElementById('gRegion').value;
-  const errEl   = document.getElementById('gError');
+function toggleMenu(id) {
+  const menu = document.getElementById(id);
+  document.querySelectorAll('[id^="gmenu-"]').forEach(m => {
+    if (m.id !== id) m.classList.add('hidden');
+  });
+  menu.classList.toggle('hidden');
+}
 
-  if (!name || !guardId || !region) {
-    errEl.textContent = 'Name, Guard ID, and Region are required.';
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('[id^="gmenu-"]') && !e.target.closest('button[onclick*="toggleMenu"]')) {
+    document.querySelectorAll('[id^="gmenu-"]').forEach(m => m.classList.add('hidden'));
+  }
+});
+
+// Close modal on backdrop click
+document.getElementById('addGuardModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+async function submitAddGuard() {
+  const name     = document.getElementById('gName').value.trim();
+  const guardId  = document.getElementById('gGuardId').value.trim();
+  const phone    = document.getElementById('gPhone').value.trim();
+  const rank     = document.getElementById('gRank').value.trim();
+  const region   = document.getElementById('gRegion').value;
+  const email    = document.getElementById('gEmail').value.trim();
+  const password = document.getElementById('gPassword').value.trim();
+  const role     = document.getElementById('gRole').value;
+  const errEl    = document.getElementById('gError');
+  const btn      = document.getElementById('gSubmitBtn');
+
+  errEl.classList.add('hidden');
+
+  if (!name || !guardId || !region || !email || !password) {
+    errEl.textContent = 'Name, Guard ID, Region, Email, and Password are required.';
     errEl.classList.remove('hidden');
     return;
   }
+
+  if (password.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Adding...';
+  btn.disabled = true;
 
   const body = new FormData();
   body.append('name', name);
@@ -382,33 +398,47 @@ async function submitAddGuard() {
   body.append('phone', phone);
   body.append('rank', rank);
   body.append('region', region);
+  body.append('email', email);
+  body.append('password', password);
+  body.append('role', role);
 
   try {
-    const res  = await fetch('/guards/add/', { method: 'POST', headers: { 'X-CSRFToken': CSRF_GUARDS }, body });
+    const res  = await fetch('/guards/add/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_GUARDS },
+      body
+    });
     const data = await res.json();
     if (data.success) {
       window.location.reload();
     } else {
       errEl.textContent = data.error || 'Something went wrong.';
       errEl.classList.remove('hidden');
+      btn.textContent = 'Add Guard';
+      btn.disabled = false;
     }
   } catch (e) {
-    errEl.textContent = 'Network error.';
+    errEl.textContent = 'Network error. Please try again.';
     errEl.classList.remove('hidden');
+    btn.textContent = 'Add Guard';
+    btn.disabled = false;
   }
 }
 
 async function deactivateGuard(uid) {
-  if (!confirm('Deactivate this guard?')) return;
+  if (!confirm('Deactivate this guard? They will lose app access.')) return;
   try {
-    const res  = await fetch(`/guards/deactivate/${uid}/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF_GUARDS } });
+    const res  = await fetch(`/guards/deactivate/${uid}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_GUARDS }
+    });
     const data = await res.json();
     if (data.success) window.location.reload();
     else alert('Failed: ' + data.error);
-  } catch (e) { alert('Network error.'); }
+  } catch (e) {
+    alert('Network error.');
+  }
 }
-
-document.getElementById('addGuardModal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.add('hidden');
-});
 </script>
+
+{% endblock %}
