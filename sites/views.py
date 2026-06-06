@@ -39,15 +39,18 @@ def _get_regions_data():
         return {}
 
 
-def _build_sites_list(sites_raw):
+def _build_sites_list(sites_raw, region_map=None):
     """Normalize raw Firebase sites data into a list."""
+    region_map = region_map or {}
     sites = []
     for site_id, site in (sites_raw or {}).items():
+        region_id = site.get('region', '—')
         sites.append({
             'id': site_id,
             'name': site.get('name', 'Unknown Site'),
             'site_code': site.get('site_code', '—'),
-            'region': site.get('region', '—'),
+            'region': region_id,
+            'region_name': region_map.get(region_id, region_id),
             'lat': site.get('lat', 0),
             'lng': site.get('lng', 0),
             'qr_generated': site.get('qr_generated', False),
@@ -83,7 +86,8 @@ def _generate_qr_image(site_id, lat, lng):
 def sites_view(request):
     sites_raw = _get_sites_data()
     regions_raw = _get_regions_data()
-    all_sites = _build_sites_list(sites_raw)
+    region_map = {rid: r.get('name', rid) for rid, r in (regions_raw or {}).items()}
+    all_sites = _build_sites_list(sites_raw, region_map)
 
     # Summary stats
     total_sites = len(all_sites)

@@ -1,8 +1,6 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials
 
 load_dotenv()
 
@@ -70,9 +68,3 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Firebase initialization
-cred = credentials.Certificate(BASE_DIR / 'serviceAccountKey.json')
-firebase_admin.initialize_app(cred, {
-    'databaseURL': os.getenv('FIREBASE_DATABASE_URL')
-})
