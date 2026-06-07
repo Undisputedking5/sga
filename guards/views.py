@@ -2,13 +2,9 @@ from django.shortcuts import render
 from datetime import datetime, timezone
 from core.firebase import db
 from core.decorators import login_required
-import uuid
-from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from firebase_admin import auth as firebase_auth
-from core.firebase import db
-
 
 
 def _relative_time(iso_str):
@@ -27,7 +23,6 @@ def _relative_time(iso_str):
 
 
 def _get_region_map():
-    """Returns {region_id: display_name} from Firebase."""
     try:
         data = db.reference("regions").get() or {}
         return {rid: r.get("name", rid) for rid, r in data.items() if isinstance(r, dict)}
@@ -36,27 +31,32 @@ def _get_region_map():
 
 
 def _get_regions_list(region_map):
-    """Returns (region_id, display_name) tuples for the dropdown."""
     return [("All Regions", "All Regions")] + sorted(region_map.items(), key=lambda x: x[1])
 
 
-def _fetch_guards(status_filter, region_filter, rank_filter, search, region_map):
-    guards    = []
+def _fetch_personnel(role_filter, status_filter, region_filter, rank_filter, search, region_map):
+    """Fetch guards or managers based on role_filter ('guard' or 'manager')."""
+    results   = []
     all_ranks = set()
     try:
         data = db.reference("guards").get() or {}
-
         for uid, g in data.items():
             if not isinstance(g, dict):
                 continue
+
+            role   = g.get("role", "guard")
+            # Only include records matching the requested role
+            if role != role_filter:
+                continue
+
             rank   = g.get("rank", "")
             name   = g.get("name", "Unknown")
             status = g.get("status", "inactive")
-            region = g.get("region", "")   # stored as region_id e.g. "nairobi_cbd"
+            region = g.get("region", "")
+
             if rank:
                 all_ranks.add(rank)
 
-            # region_filter value comes from the dropdown — it's a region_id
             if region_filter not in ("All Regions", "", None) and region != region_filter:
                 continue
             if status_filter not in ("All Statuses", "", None) and status.lower() != status_filter.lower():
@@ -66,7 +66,7 @@ def _fetch_guards(status_filter, region_filter, rank_filter, search, region_map)
             if search and search not in name.lower() and search not in g.get("guard_id", "").lower():
                 continue
 
-            guards.append({
+            results.append({
                 "uid":          uid,
                 "name":         name,
                 "guard_id":     g.get("guard_id", "—"),
@@ -75,26 +75,30 @@ def _fetch_guards(status_filter, region_filter, rank_filter, search, region_map)
                 "avatar_color": g.get("avatar_color", "#6B7280"),
                 "status":       status,
                 "region":       region,
-                "region_name":  region_map.get(region, region),  # human-readable
+                "region_name":  region_map.get(region, region),
                 "site_name":    g.get("site_name"),
                 "site_sub":     g.get("site_sub"),
                 "phone":        g.get("phone", "—"),
                 "rank":         rank,
+                "role":         role,
+                "email":        g.get("email", "—"),
                 "last_active":  _relative_time(g.get("last_active")),
             })
     except Exception as e:
         print(f"[Guards] Firebase error: {e}")
 
-    guards.sort(key=lambda g: g["name"])
-    return guards, ["All Ranks"] + sorted(all_ranks)
+    results.sort(key=lambda g: g["name"])
+    return results, ["All Ranks"] + sorted(all_ranks)
 
 
 def _get_summary():
     try:
         data       = db.reference("guards").get() or {}
-        all_guards = [g for g in data.values() if isinstance(g, dict)]
+        all_guards = [g for g in data.values() if isinstance(g, dict) and g.get("role", "guard") == "guard"]
+        all_managers = [g for g in data.values() if isinstance(g, dict) and g.get("role") == "manager"]
     except Exception:
         all_guards = []
+        all_managers = []
 
     total_active   = sum(1 for g in all_guards if g.get("status") == "active")
     on_deployment  = sum(1 for g in all_guards if g.get("site_name"))
@@ -103,28 +107,35 @@ def _get_summary():
     deployment_pct = round((on_deployment / len(all_guards)) * 100) if all_guards else 0
 
     return {
-        "total_active":   total_active,
-        "deployment_pct": deployment_pct,
-        "vacancies":      vacancies,
-        "certifications": certifications,
+        "total_active":    total_active,
+        "deployment_pct":  deployment_pct,
+        "vacancies":       vacancies,
+        "certifications":  certifications,
+        "total_managers":  len(all_managers),
+        "active_managers": sum(1 for m in all_managers if m.get("status") == "active"),
     }
 
 
 @login_required
 def guards_directory(request):
+    # Which tab is active — 'guards' or 'managers'
+    active_tab    = request.GET.get("tab", "guards")
+    role_filter   = "manager" if active_tab == "managers" else "guard"
+
     status_filter = request.GET.get("status", "All Statuses")
     region_filter = request.GET.get("region", "All Regions")
     rank_filter   = request.GET.get("rank",   "All Ranks")
     search        = request.GET.get("search", "").strip().lower()
 
-    region_map    = _get_region_map()
-    guards, ranks = _fetch_guards(status_filter, region_filter, rank_filter, search, region_map)
-    summary       = _get_summary()
-    regions       = _get_regions_list(region_map)
+    region_map              = _get_region_map()
+    personnel, ranks        = _fetch_personnel(role_filter, status_filter, region_filter, rank_filter, search, region_map)
+    summary                 = _get_summary()
+    regions                 = _get_regions_list(region_map)
 
     context = {
-        "guards":        guards,
-        "guard_count":   len(guards),
+        "guards":        personnel,
+        "guard_count":   len(personnel),
+        "active_tab":    active_tab,
         "statuses":      ["All Statuses", "active", "on_leave", "urgent", "inactive"],
         "regions":       regions,
         "ranks":         ranks,
@@ -134,13 +145,9 @@ def guards_directory(request):
         "search_query":  search,
         "summary":       summary,
         "display_name":  request.session.get("display_name", "Admin"),
+        "active_nav":    "guards",
     }
     return render(request, "guards/guards.html", context)
-
-import uuid
-from datetime import datetime
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 
 
 @login_required
@@ -154,24 +161,17 @@ def add_guard(request):
         region   = request.POST.get('region', '').strip()
         email    = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '').strip()
-        role     = request.POST.get('role', 'guard').strip()  # 'guard' or 'manager'
+        role     = request.POST.get('role', 'guard').strip()
 
         if not name or not guard_id or not region or not email or not password:
-            return JsonResponse({
-                'success': False,
-                'error': 'Name, Guard ID, Region, Email, and Password are required.'
-            })
+            return JsonResponse({'success': False, 'error': 'Name, Guard ID, Region, Email, and Password are required.'})
 
         if role not in ('guard', 'manager'):
             return JsonResponse({'success': False, 'error': 'Invalid role.'})
 
         if len(password) < 6:
-            return JsonResponse({
-                'success': False,
-                'error': 'Password must be at least 6 characters.'
-            })
+            return JsonResponse({'success': False, 'error': 'Password must be at least 6 characters.'})
 
-        # Step 1 — Create Firebase Auth user (real UID)
         try:
             firebase_user = firebase_auth.create_user(
                 email=email,
@@ -180,36 +180,29 @@ def add_guard(request):
             )
             uid = firebase_user.uid
         except firebase_auth.EmailAlreadyExistsError:
-            return JsonResponse({
-                'success': False,
-                'error': f'A user with email {email} already exists.'
-            })
+            return JsonResponse({'success': False, 'error': f'A user with email {email} already exists.'})
 
-        # Step 2 — Write to /guards/{uid} using the real Firebase Auth UID
         initials = ''.join(w[0].upper() for w in name.split()[:2])
         db.reference(f'/guards/{uid}').set({
-            'name':        name,
-            'guard_id':    guard_id,
-            'initials':    initials,
-            'email':       email,
-            'phone':       phone,
-            'rank':        rank,
-            'region':      region,
-            'role':        role,
-            'status':      'active',
-            'certified':   False,
-            'last_active': datetime.utcnow().isoformat() + 'Z',
+            'name':         name,
+            'guard_id':     guard_id,
+            'initials':     initials,
+            'email':        email,
+            'phone':        phone,
+            'rank':         rank,
+            'region':       region,
+            'role':         role,
+            'status':       'active',
+            'certified':    False,
+            'last_active':  datetime.utcnow().isoformat() + 'Z',
             'avatar_color': '#B7131A',
         })
 
-        return JsonResponse({
-            'success': True,
-            'uid': uid,
-            'message': f'{role.title()} {name} created successfully.'
-        })
+        return JsonResponse({'success': True, 'uid': uid, 'message': f'{role.title()} {name} created successfully.'})
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
 
 @login_required
 @require_POST

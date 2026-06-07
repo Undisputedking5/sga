@@ -61,12 +61,9 @@ def _build_sites_list(sites_raw, region_map=None):
 
 
 def _generate_qr_image(site_id, lat, lng):
-    """Generate a QR code encoding site_id|lat|lng and return base64 PNG."""
-    payload = json.dumps({
-        'site_id': site_id,
-        'lat': lat,
-        'lng': lng,
-    })
+    """Generate a QR code encoding siteId|lat|lng and return base64 PNG."""
+    payload = f"{site_id}|{lat}|{lng}"
+
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -80,8 +77,6 @@ def _generate_qr_image(site_id, lat, lng):
     img.save(buffer, format='PNG')
     buffer.seek(0)
     return base64.b64encode(buffer.read()).decode('utf-8')
-
-
 @login_required
 def sites_view(request):
     sites_raw = _get_sites_data()

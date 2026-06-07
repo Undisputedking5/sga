@@ -6,7 +6,7 @@
 {% block content %}
 <div class="flex-1 flex flex-col min-h-screen bg-gray-50">
 
-  <!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
+  <!-- ── HEADER ──────────────────────────────────────────────────────────── -->
   <div class="bg-white border-b border-gray-200 px-8 py-5">
     <div class="flex items-start justify-between">
       <div>
@@ -20,7 +20,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Guards Directory</h1>
         <p class="text-sm text-gray-500 mt-0.5">
           Manage <span class="font-semibold text-gray-700">{{ guard_count }}</span>
-          total personnel across all operational sectors.
+          {% if active_tab == "managers" %}managers{% else %}guards{% endif %} across all operational sectors.
         </p>
       </div>
       <button onclick="document.getElementById('addGuardModal').classList.remove('hidden')"
@@ -28,16 +28,47 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
         </svg>
-        ADD NEW GUARD
+        ADD NEW {% if active_tab == "managers" %}MANAGER{% else %}GUARD{% endif %}
       </button>
     </div>
   </div>
 
   <div class="flex-1 px-8 py-6 space-y-5">
 
-    <!-- ── FILTER CARD ─────────────────────────────────────────────────────── -->
+    <!-- ── TABS ────────────────────────────────────────────────────────── -->
+    <div class="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+      <a href="?tab=guards"
+         class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                {% if active_tab == 'guards' %}bg-white text-red-600 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Guards
+          <span class="{% if active_tab == 'guards' %}bg-red-100 text-red-600{% else %}bg-gray-200 text-gray-500{% endif %} text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ summary.total_active }}
+          </span>
+        </span>
+      </a>
+      <a href="?tab=managers"
+         class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                {% if active_tab == 'managers' %}bg-white text-red-600 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Managers
+          <span class="{% if active_tab == 'managers' %}bg-red-100 text-red-600{% else %}bg-gray-200 text-gray-500{% endif %} text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ summary.total_managers }}
+          </span>
+        </span>
+      </a>
+    </div>
+
+    <!-- ── FILTER CARD ──────────────────────────────────────────────────── -->
     <div class="bg-white border border-gray-200 rounded-xl p-5">
       <form method="get" id="filter-form" class="flex flex-wrap items-end gap-4">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</label>
           <select name="status" onchange="this.form.submit()"
@@ -56,6 +87,7 @@
             {% endfor %}
           </select>
         </div>
+        {% if active_tab == "guards" %}
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rank</label>
           <select name="rank" onchange="this.form.submit()"
@@ -65,6 +97,7 @@
             {% endfor %}
           </select>
         </div>
+        {% endif %}
         <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
           <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Search</label>
           <div class="relative">
@@ -72,11 +105,11 @@
               <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
             </svg>
             <input type="text" name="search" value="{{ search_query }}"
-              placeholder="Search personnel..."
+              placeholder="Search {{ active_tab }}..."
               class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"/>
           </div>
         </div>
-        <a href="{% url 'guards:directory' %}"
+        <a href="?tab={{ active_tab }}"
            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors pb-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -86,7 +119,7 @@
       </form>
     </div>
 
-    <!-- ── DATA TABLE ──────────────────────────────────────────────────────── -->
+    <!-- ── DATA TABLE ───────────────────────────────────────────────────── -->
     <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -95,7 +128,11 @@
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-4">Personnel</th>
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Status</th>
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Region</th>
+              {% if active_tab == "guards" %}
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Assigned Site</th>
+              {% else %}
+              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Email</th>
+              {% endif %}
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Contact</th>
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Last Active</th>
               <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-4">Actions</th>
@@ -116,7 +153,12 @@
                     </div>
                   {% endif %}
                   <div>
-                    <p class="font-semibold text-gray-900">{{ guard.name }}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="font-semibold text-gray-900">{{ guard.name }}</p>
+                      {% if guard.role == "manager" %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">MGR</span>
+                      {% endif %}
+                    </div>
                     <p class="text-xs text-gray-400 mt-0.5">{{ guard.guard_id }}</p>
                   </div>
                 </div>
@@ -135,6 +177,7 @@
                 {% endif %}
               </td>
               <td class="px-4 py-4 text-gray-700">{{ guard.region_name|default:guard.region|default:"—" }}</td>
+              {% if active_tab == "guards" %}
               <td class="px-4 py-4">
                 {% if guard.site_name %}
                   <p class="font-semibold text-gray-900">{{ guard.site_name }}</p>
@@ -144,6 +187,9 @@
                   <p class="text-xs text-gray-400 mt-0.5">Awaiting Site</p>
                 {% endif %}
               </td>
+              {% else %}
+              <td class="px-4 py-4 text-gray-600 text-sm">{{ guard.email|default:"—" }}</td>
+              {% endif %}
               <td class="px-4 py-4 text-gray-700 whitespace-nowrap">{{ guard.phone }}</td>
               <td class="px-4 py-4 text-gray-500 text-xs whitespace-nowrap">{{ guard.last_active }}</td>
               <td class="px-4 py-4">
@@ -154,7 +200,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                   </button>
-                  <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Edit Guard">
+                  <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Edit">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
@@ -168,6 +214,7 @@
                     </button>
                     <div id="gmenu-{{ guard.uid }}"
                       class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1">
+                      {% if active_tab == "guards" %}
                       <a href="/attendance/?search={{ guard.name }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -182,6 +229,7 @@
                         Reassign Site
                       </a>
                       <div class="border-t border-gray-100 my-1"></div>
+                      {% endif %}
                       <button onclick="deactivateGuard('{{ guard.uid }}')" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
@@ -199,8 +247,8 @@
                 <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                <p class="font-medium">No guards found</p>
-                <p class="text-sm mt-1">Try adjusting your filters or add a new guard</p>
+                <p class="font-medium">No {{ active_tab }} found</p>
+                <p class="text-sm mt-1">Try adjusting your filters or add a new {{ active_tab|slice:":-1" }}</p>
               </td>
             </tr>
             {% endfor %}
@@ -208,7 +256,8 @@
         </table>
       </div>
 
-      <!-- ── SUMMARY BAR ────────────────────────────────────────────────────── -->
+      <!-- ── SUMMARY BAR ──────────────────────────────────────────────── -->
+      {% if active_tab == "guards" %}
       <div class="border-t border-gray-100 grid grid-cols-4 divide-x divide-gray-100">
         <div class="px-6 py-4">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total Active</p>
@@ -236,15 +285,26 @@
           </div>
         </div>
       </div>
+      {% else %}
+      <div class="border-t border-gray-100 grid grid-cols-2 divide-x divide-gray-100">
+        <div class="px-6 py-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total Managers</p>
+          <span class="text-2xl font-bold text-gray-900">{{ summary.total_managers }}</span>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Active</p>
+          <span class="text-2xl font-bold text-gray-900">{{ summary.active_managers }}</span>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
 
-<!-- ── ADD GUARD MODAL (inside block content) ─────────────────────────────── -->
+<!-- ── ADD GUARD / MANAGER MODAL ────────────────────────────────────────── -->
 <div id="addGuardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
 
-    <!-- Modal Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
       <h3 class="text-base font-semibold text-gray-900">Add New Guard / Manager</h3>
       <button onclick="document.getElementById('addGuardModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
@@ -254,8 +314,33 @@
       </button>
     </div>
 
-    <!-- Modal Body -->
     <div class="px-6 py-5 space-y-4">
+
+      <!-- Role selector — at the top so it's prominent -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-2">Role <span class="text-red-600">*</span></label>
+        <div class="flex gap-3">
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="gRoleRadio" value="guard" checked onchange="setRole(this.value)" class="sr-only">
+            <div id="roleGuardBtn" class="flex items-center justify-center gap-2 py-3 border-2 border-red-500 bg-red-50 rounded-xl text-sm font-semibold text-red-700 transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Guard
+            </div>
+          </label>
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="gRoleRadio" value="manager" onchange="setRole(this.value)" class="sr-only">
+            <div id="roleManagerBtn" class="flex items-center justify-center gap-2 py-3 border-2 border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-500 transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              Manager
+            </div>
+          </label>
+        </div>
+        <input type="hidden" id="gRole" value="guard">
+      </div>
 
       <!-- Name + Guard ID -->
       <div class="grid grid-cols-2 gap-4">
@@ -265,7 +350,7 @@
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Guard ID <span class="text-red-600">*</span></label>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5" id="gIdLabel">Guard ID <span class="text-red-600">*</span></label>
           <input type="text" id="gGuardId" placeholder="e.g. SGA-0042"
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
@@ -279,7 +364,7 @@
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1.5">Rank</label>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5" id="gRankLabel">Rank</label>
           <input type="text" id="gRank" placeholder="e.g. Senior Guard"
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
@@ -292,7 +377,9 @@
           class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
           <option value="">Select region...</option>
           {% for rid, rname in regions %}
+          {% if rid != "All Regions" %}
           <option value="{{ rid }}">{{ rname }}</option>
+          {% endif %}
           {% endfor %}
         </select>
       </div>
@@ -300,7 +387,7 @@
       <!-- Email -->
       <div>
         <label class="block text-xs font-semibold text-gray-500 mb-1.5">Email Address <span class="text-red-600">*</span></label>
-        <input type="email" id="gEmail" placeholder="guard@sgasecurity.com"
+        <input type="email" id="gEmail" placeholder="user@sgasecurity.com"
           class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
       </div>
 
@@ -311,22 +398,11 @@
           class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
       </div>
 
-      <!-- Role -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Role <span class="text-red-600">*</span></label>
-        <select id="gRole"
-          class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
-          <option value="guard">Guard</option>
-          <option value="manager">Manager</option>
-        </select>
-      </div>
-
       <!-- Error -->
       <div id="gError" class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
 
     </div>
 
-    <!-- Modal Footer -->
     <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
       <button onclick="document.getElementById('addGuardModal').classList.add('hidden')"
         class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
@@ -344,6 +420,33 @@
 <script>
 const CSRF_GUARDS = '{{ csrf_token }}';
 
+function setRole(val) {
+  document.getElementById('gRole').value = val;
+  const guardBtn   = document.getElementById('roleGuardBtn');
+  const managerBtn = document.getElementById('roleManagerBtn');
+  const submitBtn  = document.getElementById('gSubmitBtn');
+  const idLabel    = document.getElementById('gIdLabel');
+  const rankLabel  = document.getElementById('gRankLabel');
+
+  if (val === 'manager') {
+    guardBtn.className   = 'flex items-center justify-center gap-2 py-3 border-2 border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-500 transition-all';
+    managerBtn.className = 'flex items-center justify-center gap-2 py-3 border-2 border-blue-500 bg-blue-50 rounded-xl text-sm font-semibold text-blue-700 transition-all';
+    submitBtn.textContent = 'Add Manager';
+    idLabel.innerHTML = 'Manager ID <span class="text-red-600">*</span>';
+    rankLabel.textContent = 'Title';
+    document.getElementById('gGuardId').placeholder = 'e.g. MGR-0001';
+    document.getElementById('gRank').placeholder = 'e.g. Area Manager';
+  } else {
+    guardBtn.className   = 'flex items-center justify-center gap-2 py-3 border-2 border-red-500 bg-red-50 rounded-xl text-sm font-semibold text-red-700 transition-all';
+    managerBtn.className = 'flex items-center justify-center gap-2 py-3 border-2 border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-500 transition-all';
+    submitBtn.textContent = 'Add Guard';
+    idLabel.innerHTML = 'Guard ID <span class="text-red-600">*</span>';
+    rankLabel.textContent = 'Rank';
+    document.getElementById('gGuardId').placeholder = 'e.g. SGA-0042';
+    document.getElementById('gRank').placeholder = 'e.g. Senior Guard';
+  }
+}
+
 function toggleMenu(id) {
   const menu = document.getElementById(id);
   document.querySelectorAll('[id^="gmenu-"]').forEach(m => {
@@ -358,7 +461,6 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Close modal on backdrop click
 document.getElementById('addGuardModal').addEventListener('click', function(e) {
   if (e.target === this) this.classList.add('hidden');
 });
@@ -378,11 +480,10 @@ async function submitAddGuard() {
   errEl.classList.add('hidden');
 
   if (!name || !guardId || !region || !email || !password) {
-    errEl.textContent = 'Name, Guard ID, Region, Email, and Password are required.';
+    errEl.textContent = 'Name, ID, Region, Email, and Password are required.';
     errEl.classList.remove('hidden');
     return;
   }
-
   if (password.length < 6) {
     errEl.textContent = 'Password must be at least 6 characters.';
     errEl.classList.remove('hidden');
@@ -410,23 +511,23 @@ async function submitAddGuard() {
     });
     const data = await res.json();
     if (data.success) {
-      window.location.reload();
+      window.location.href = '?tab=' + role + 's';
     } else {
       errEl.textContent = data.error || 'Something went wrong.';
       errEl.classList.remove('hidden');
-      btn.textContent = 'Add Guard';
+      btn.textContent = role === 'manager' ? 'Add Manager' : 'Add Guard';
       btn.disabled = false;
     }
   } catch (e) {
     errEl.textContent = 'Network error. Please try again.';
     errEl.classList.remove('hidden');
-    btn.textContent = 'Add Guard';
+    btn.textContent = role === 'manager' ? 'Add Manager' : 'Add Guard';
     btn.disabled = false;
   }
 }
 
 async function deactivateGuard(uid) {
-  if (!confirm('Deactivate this guard? They will lose app access.')) return;
+  if (!confirm('Deactivate this person? They will lose app access.')) return;
   try {
     const res  = await fetch(`/guards/deactivate/${uid}/`, {
       method: 'POST',
