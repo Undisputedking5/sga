@@ -1,7 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
 from core.decorators import login_required
 from datetime import datetime
-from core.firebase import db   # unified import — avoids double-init
+from core.firebase import db
 
 
 def get_overview_stats():
@@ -41,7 +43,7 @@ def get_overview_stats():
                     'site':   rec.get('site', '—'),
                     'region': rec.get('region', '—'),
                     'time':   rec.get('clock_in', '—'),
-                    'status': status,   # 'on_time' or 'late'
+                    'status': status,
                 })
 
         live_checkins = sorted(live_checkins, key=lambda x: x['time'], reverse=True)[:10]
@@ -68,14 +70,14 @@ def get_overview_stats():
 
         alerts_snap = db.reference('alerts').get() or {}
         alerts = []
-        for a in alerts_snap.values():
+        for alert_id, a in alerts_snap.items():
             if not isinstance(a, dict) or a.get('resolved', False):
                 continue
             alert_type = a.get('type', 'warning')
-            # Build a human-readable title from Firebase alert fields
             guard_name = a.get('guard_name', 'Unknown Guard')
-            site       = a.get('site_id', a.get('site', ''))
+            site       = a.get('site_name', a.get('site', ''))
             region     = a.get('region', '')
+
             if alert_type == 'sos':
                 title    = f"SOS — {guard_name}"
                 subtitle = f"{site} · {region}" if site else region
@@ -90,9 +92,14 @@ def get_overview_stats():
                 subtitle = a.get('subtitle', region)
 
             alerts.append({
-                'type':     'critical' if alert_type == 'sos' else 'warning',
-                'title':    title,
-                'subtitle': subtitle,
+                'alert_id':   alert_id,          # ← NEW
+                'type':       'critical' if alert_type == 'sos' else 'warning',
+                'alert_type': alert_type,         # ← NEW (raw type for template logic)
+                'title':      title,
+                'subtitle':   subtitle,
+                'guard_name': guard_name,         # ← NEW (for respond confirmation)
+                'lat':        a.get('lat', ''),   # ← NEW (for map link)
+                'lng':        a.get('lng', ''),   # ← NEW
             })
 
         return {
@@ -126,3 +133,24 @@ def overview(request):
         **stats,
     }
     return render(request, 'overview/overview.html', context)
+
+
+@login_required
+@require_POST
+def respond_sos(request, alert_id):
+    """Mark an SOS alert as resolved from the dashboard."""
+    try:
+        alert_ref = db.reference(f'alerts/{alert_id}')
+        alert = alert_ref.get()
+        if not alert:
+            return JsonResponse({'success': False, 'error': 'Alert not found'}, status=404)
+
+        alert_ref.update({
+            'resolved':      True,
+            'read':          True,
+            'responded_at':  datetime.now().isoformat(),
+            'responded_by':  request.session.get('uid', 'admin'),
+        })
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

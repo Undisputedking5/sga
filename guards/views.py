@@ -5,6 +5,7 @@ from core.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from firebase_admin import auth as firebase_auth
+import json
 
 
 def _relative_time(iso_str):
@@ -212,3 +213,134 @@ def deactivate_guard(request, uid):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+def guard_detail_view(request, uid):
+    """View a single guard/manager profile."""
+    try:
+        guard_raw = db.reference(f'/guards/{uid}').get()
+        if not guard_raw or not isinstance(guard_raw, dict):
+            from django.http import Http404
+            raise Http404("Guard not found")
+
+        region_map = _get_region_map()
+        region_id  = guard_raw.get('region', '')
+
+        # Fetch last 14 days of attendance
+        try:
+            attendance_raw = db.reference(f'/attendance/{uid}').get() or {}
+            attendance = []
+            for date_str, rec in sorted(attendance_raw.items(), reverse=True)[:14]:
+                if not isinstance(rec, dict):
+                    continue
+                attendance.append({
+                    'date':       date_str,
+                    'status':     rec.get('status', 'absent'),
+                    'clock_in':   rec.get('clock_in', '—'),
+                    'clock_out':  rec.get('clock_out', '—'),
+                    'site':       rec.get('site', '—'),
+                })
+        except Exception:
+            attendance = []
+
+        # Attendance summary
+        present = sum(1 for a in attendance if a['status'] in ('on_time', 'late'))
+        absent  = sum(1 for a in attendance if a['status'] == 'absent')
+        late    = sum(1 for a in attendance if a['status'] == 'late')
+
+        # Fetch guard's reports
+        try:
+            reports_raw = db.reference('/reports').get() or {}
+            reports = []
+            for rid, rep in reports_raw.items():
+                if not isinstance(rep, dict):
+                    continue
+                if rep.get('submitted_by') != uid:
+                    continue
+                reports.append({
+                    'id':     rid,
+                    'title':  rep.get('title', 'Untitled'),
+                    'date':   rep.get('date', '—'),
+                    'status': rep.get('status', 'pending'),
+                    'type':   rep.get('type', 'daily'),
+                })
+            reports.sort(key=lambda x: x['date'], reverse=True)
+            reports = reports[:5]
+        except Exception:
+            reports = []
+
+        guard = {
+            'uid':          uid,
+            'name':         guard_raw.get('name', 'Unknown'),
+            'guard_id':     guard_raw.get('guard_id', '—'),
+            'initials':     guard_raw.get('initials', '??'),
+            'avatar_color': guard_raw.get('avatar_color', '#B7131A'),
+            'avatar_url':   guard_raw.get('avatar_url', ''),
+            'email':        guard_raw.get('email', '—'),
+            'phone':        guard_raw.get('phone', '—'),
+            'rank':         guard_raw.get('rank', '—'),
+            'role':         guard_raw.get('role', 'guard'),
+            'status':       guard_raw.get('status', 'inactive'),
+            'region':       region_id,
+            'region_name':  region_map.get(region_id, region_id),
+            'site_name':    guard_raw.get('site_name', '—'),
+            'certified':    guard_raw.get('certified', False),
+            'last_active':  _relative_time(guard_raw.get('last_active')),
+        }
+
+        context = {
+            'guard':       guard,
+            'attendance':  attendance,
+            'reports':     reports,
+            'present':     present,
+            'absent':      absent,
+            'late':        late,
+            'total_days':  len(attendance),
+            'regions':     _get_regions_list(_get_region_map()),
+            'page_title':  guard['name'],
+            'active_nav':  'guards',
+        }
+        return render(request, 'guards/guard_detail.html', context)
+
+    except Exception as e:
+        from django.http import Http404
+        raise Http404(str(e))
+
+
+@login_required
+@require_POST
+def edit_guard_view(request, uid):
+    """Edit a guard/manager profile."""
+    try:
+        data = json.loads(request.body)
+
+        guard_raw = db.reference(f'/guards/{uid}').get()
+        if not guard_raw:
+            return JsonResponse({'error': 'Guard not found.'}, status=404)
+
+        name   = data.get('name', '').strip()
+        phone  = data.get('phone', '').strip()
+        rank   = data.get('rank', '').strip()
+        region = data.get('region', '').strip()
+        status = data.get('status', '').strip()
+
+        if not name:
+            return JsonResponse({'error': 'Name is required.'}, status=400)
+        if status not in ('active', 'on_leave', 'urgent', 'inactive'):
+            return JsonResponse({'error': 'Invalid status.'}, status=400)
+
+        initials = ''.join(w[0].upper() for w in name.split()[:2])
+
+        db.reference(f'/guards/{uid}').update({
+            'name':     name,
+            'initials': initials,
+            'phone':    phone,
+            'rank':     rank,
+            'region':   region,
+            'status':   status,
+        })
+
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

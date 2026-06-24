@@ -259,8 +259,9 @@
 
                 <!-- Notify -->
                 <button title="Send Notification"
+                  onclick="openNotifyModal('{{ report.id }}', '{{ report.title|escapejs }}', '{{ report.submitted_by|escapejs }}')"
                   class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg
-                         text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                    text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -397,6 +398,97 @@
   </div>
 </div>
 
+<!-- ── SEND NOTIFICATION MODAL ────────────────────────────────── -->
+<div id="notifyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 class="text-base font-semibold text-gray-900">Send Notification</h3>
+      <button onclick="closeNotifyModal()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-5 space-y-4">
+      <div id="notifyError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3"></div>
+
+      <!-- Report info -->
+      <div class="bg-gray-50 rounded-lg px-4 py-3">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Report</p>
+        <p class="text-sm font-semibold text-gray-900" id="notifyReportTitle"></p>
+        <p class="text-xs text-gray-500 mt-0.5">To: <span id="notifyGuardName" class="font-medium"></span></p>
+      </div>
+
+      <!-- Notification type -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notification Type</label>
+        <div class="flex gap-2">
+          <button type="button" onclick="setNotifyType('report')" id="ntype_report"
+            class="flex-1 py-2 text-xs font-semibold border-2 border-blue-500 bg-blue-50 text-blue-700 rounded-lg transition-all">
+            General
+          </button>
+          <button type="button" onclick="setNotifyType('revision')" id="ntype_revision"
+            class="flex-1 py-2 text-xs font-semibold border-2 border-gray-200 bg-white text-gray-500 rounded-lg transition-all">
+            Needs Revision
+          </button>
+          <button type="button" onclick="setNotifyType('approved')" id="ntype_approved"
+            class="flex-1 py-2 text-xs font-semibold border-2 border-gray-200 bg-white text-gray-500 rounded-lg transition-all">
+            Approved
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick message templates -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Templates</label>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="setMessage('Your report has been received and is under review.')"
+            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors">
+            Under review
+          </button>
+          <button type="button" onclick="setMessage('Please resubmit with more detail on the incident section.')"
+            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors">
+            More detail needed
+          </button>
+          <button type="button" onclick="setMessage('Your report has been approved. Well done.')"
+            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors">
+            Approved
+          </button>
+          <button type="button" onclick="setMessage('Urgent: Please contact the duty manager immediately.')"
+            class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition-colors">
+            Urgent contact
+          </button>
+        </div>
+      </div>
+
+      <!-- Message -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Message *</label>
+        <textarea id="notifyMessage" rows="3" placeholder="Type your message to the guard..."
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+      <button onclick="closeNotifyModal()"
+        class="text-sm text-gray-500 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitNotification()"
+        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+        <span id="notifyLabel">Send Notification</span>
+        <svg id="notifySpinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
 
 <!-- ── SCRIPTS ───────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -496,6 +588,83 @@ function exportCSV() {
 function getCookie(name) {
   const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
   return v ? v[2] : '';
+}
+// ── Notify modal ──────────────────────────────────────────────────
+let _notifyReportId   = null;
+let _notifyType       = 'report';
+
+function openNotifyModal(reportId, title, guardName) {
+  _notifyReportId = reportId;
+  _notifyType     = 'report';
+  document.getElementById('notifyReportTitle').textContent = title;
+  document.getElementById('notifyGuardName').textContent   = guardName;
+  document.getElementById('notifyMessage').value           = '';
+  document.getElementById('notifyError').classList.add('hidden');
+  setNotifyType('report');
+  document.getElementById('notifyModal').classList.remove('hidden');
+}
+
+function closeNotifyModal() {
+  document.getElementById('notifyModal').classList.add('hidden');
+}
+
+function setNotifyType(type) {
+  _notifyType = type;
+  ['report', 'revision', 'approved'].forEach(t => {
+    const btn = document.getElementById('ntype_' + t);
+    if (t === type) {
+      const colors = { report: 'border-blue-500 bg-blue-50 text-blue-700', revision: 'border-yellow-500 bg-yellow-50 text-yellow-700', approved: 'border-green-500 bg-green-50 text-green-700' };
+      btn.className = `flex-1 py-2 text-xs font-semibold border-2 ${colors[t]} rounded-lg transition-all`;
+    } else {
+      btn.className = 'flex-1 py-2 text-xs font-semibold border-2 border-gray-200 bg-white text-gray-500 rounded-lg transition-all';
+    }
+  });
+}
+
+function setMessage(text) {
+  document.getElementById('notifyMessage').value = text;
+}
+
+async function submitNotification() {
+  const message = document.getElementById('notifyMessage').value.trim();
+  const errEl   = document.getElementById('notifyError');
+  errEl.classList.add('hidden');
+
+  if (!message) {
+    errEl.textContent = 'Please enter a message.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('notifyLabel').textContent = 'Sending...';
+  document.getElementById('notifySpinner').classList.remove('hidden');
+
+  try {
+    const res  = await fetch(`/reports/${_notifyReportId}/notify/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ message, type: _notifyType })
+    });
+    const data = await res.json();
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    closeNotifyModal();
+    // Brief toast
+    const t = document.createElement('div');
+    t.textContent = 'Notification sent successfully.';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#111;color:#fff;font-size:13px;padding:12px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  } catch (e) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    document.getElementById('notifyLabel').textContent = 'Send Notification';
+    document.getElementById('notifySpinner').classList.add('hidden');
+  }
 }
 </script>
 

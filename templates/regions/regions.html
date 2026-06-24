@@ -213,43 +213,122 @@
 
 
 <!-- ── ADD REGION MODAL ──────────────────────────────────────────── -->
-<div id="addRegionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+<div id="addRegionModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4" style="backdrop-filter: blur(2px);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
       <h3 class="text-base font-semibold text-gray-900">Add New Region</h3>
-      <button onclick="document.getElementById('addRegionModal').classList.add('hidden')"
-        class="text-gray-400 hover:text-gray-600 transition-colors">
+      <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
+
     <div class="px-6 py-5 space-y-4">
-      <p class="text-sm text-gray-500">
-        Region data is managed directly in Firebase Realtime Database under <code class="bg-gray-100 px-1 rounded text-xs">/regions/{region_id}</code>.
-      </p>
-      <div class="bg-gray-50 rounded-lg p-4 text-xs font-mono text-gray-600 space-y-1">
-        <p class="text-gray-400 mb-2">// Required fields:</p>
-        <p>"name": "Nairobi CBD",</p>
-        <p>"region_code": "REG-2024-001",</p>
-        <p>"map_code": "MAP-N01",</p>
-        <p>"status": "stable",</p>
-        <p>"lat": -1.2921,</p>
-        <p>"lng": 36.8219,</p>
-        <p>"sites": 12,</p>
-        <p>"incidents": "low"</p>
+
+      <!-- Error banner -->
+      <div id="regionFormError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3"></div>
+
+      <!-- Name -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Region Name *</label>
+        <input id="r_name" type="text" placeholder="e.g. Nairobi CBD"
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
       </div>
-      <a href="https://console.firebase.google.com" target="_blank"
-        class="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-        </svg>
-        Open Firebase Console
-      </a>
+
+      <!-- Region Code -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Region Code *</label>
+        <input id="r_code" type="text" placeholder="e.g. NBI-CBD-001"
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        <p class="text-xs text-gray-400 mt-1">Will be uppercased automatically.</p>
+      </div>
+
+      <!-- Status + Incidents -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+          <select id="r_status" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="stable">Stable</option>
+            <option value="monitoring">Monitoring</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Incident Level</label>
+          <select id="r_incidents" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="low">Low</option>
+            <option value="med">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Coordinates -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Coordinates</label>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="r_lat" type="number" step="any" placeholder="Latitude e.g. -1.2921"
+            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+          <input id="r_lng" type="number" step="any" placeholder="Longitude e.g. 36.8219"
+            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">
+          Not sure?
+          <a href="https://www.google.com/maps" target="_blank" class="text-red-500 hover:underline">Find on Google Maps</a>
+          — right-click any location and copy the coordinates.
+        </p>
+      </div>
+
+      <!-- Preview map -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Location Preview</label>
+        <div style="position:relative; z-index:1; height:180px; border-radius:8px; overflow:hidden; border: 1px solid #e5e7eb;">
+        <div id="previewMap" style="height:180px; width:100%;"></div>
+         </div>
+
+        <button type="button" onclick="updatePreviewMap()"
+          class="mt-2 text-xs text-red-600 hover:text-red-700 font-medium">
+          ↻ Update preview
+        </button>
+      </div>
+
+      <!-- Sites + Manager -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Number of Sites</label>
+          <input id="r_sites" type="number" min="0" value="0" placeholder="0"
+            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Manager Name</label>
+          <input id="r_manager" type="text" placeholder="e.g. John Kamau"
+            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+      <button onclick="closeAddModal()"
+        class="text-sm text-gray-500 hover:text-gray-700 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitRegion()"
+        id="submitRegionBtn"
+        class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+        <span id="submitRegionLabel">Create Region</span>
+        <svg id="submitRegionSpinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+      </button>
+    </div>
+
   </div>
 </div>
-
 
 <!-- ── LEAFLET JS ────────────────────────────────────────────────── -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -258,99 +337,62 @@
   // ── Map data from Django ─────────────────────────────────────────
   const mapMarkers = {{ map_markers|safe }};
 
-  // ── Tile layers ──────────────────────────────────────────────────
   const tileLayers = {
     dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CartoDB',
-      subdomains: 'abcd', maxZoom: 19
+      attribution: '© OpenStreetMap © CartoDB', subdomains: 'abcd', maxZoom: 19
     }),
     street: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CartoDB',
-      subdomains: 'abcd', maxZoom: 19
+      attribution: '© OpenStreetMap © CartoDB', subdomains: 'abcd', maxZoom: 19
     })
   };
 
-  // ── Init map (centered on Kenya) ─────────────────────────────────
   const map = L.map('deploymentMap', {
-    center: [-0.0236, 37.9062],
-    zoom: 6,
-    zoomControl: true,
-    layers: [tileLayers.dark]
+    center: [-0.0236, 37.9062], zoom: 6, zoomControl: true, layers: [tileLayers.dark]
   });
 
   let currentStyle = 'dark';
 
-  // ── Custom pulsing marker icons ──────────────────────────────────
   function makeIcon(color) {
-    const colors = {
-      critical: '#ef4444',
-      monitoring: '#f59e0b',
-      stable: '#22c55e',
-    };
+    const colors = { critical: '#ef4444', monitoring: '#f59e0b', stable: '#22c55e' };
     const hex = colors[color] || '#6b7280';
     return L.divIcon({
       className: '',
-      html: `
-        <div style="position:relative; width:28px; height:28px;">
-          <div style="
-            position:absolute; inset:0;
-            background:${hex}22;
-            border-radius:50%;
-            animation: pulse 2s ease-in-out infinite;
-          "></div>
-          <div style="
-            position:absolute; top:50%; left:50%;
-            transform:translate(-50%,-50%);
-            width:14px; height:14px;
-            background:${hex};
-            border-radius:50%;
-            border:2px solid white;
-            box-shadow:0 0 8px ${hex}88;
-          "></div>
-        </div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-      popupAnchor: [0, -16]
+      html: `<div style="position:relative;width:28px;height:28px;">
+        <div style="position:absolute;inset:0;background:${hex}22;border-radius:50%;animation:pulse 2s ease-in-out infinite;"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:${hex};border-radius:50%;border:2px solid white;box-shadow:0 0 8px ${hex}88;"></div>
+      </div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16]
     });
   }
 
-  // ── Place markers ────────────────────────────────────────────────
-  mapMarkers.forEach(function(r) {
+  // ── Live markers list (so we can add new ones without reload) ────
+  const liveMarkers = [];
+
+  function placeMarker(r) {
     const status = r.status || 'stable';
-    const incidentColor = r.incidents === 'high' ? 'critical'
-                        : r.incidents === 'med'  ? 'monitoring'
-                        : status;
-
+    const incidentColor = r.incidents === 'high' ? 'critical' : r.incidents === 'med' ? 'monitoring' : status;
     const marker = L.marker([r.lat, r.lng], { icon: makeIcon(incidentColor) });
-
-    const incidentBadge = {
-      low:  '<span style="color:#22c55e;font-weight:600;">Low</span>',
-      med:  '<span style="color:#f59e0b;font-weight:600;">Med</span>',
-      high: '<span style="color:#ef4444;font-weight:600;">High</span>',
-    }[r.incidents] || r.incidents;
-
+    const incidentBadge = { low: '<span style="color:#22c55e;font-weight:600;">Low</span>', med: '<span style="color:#f59e0b;font-weight:600;">Med</span>', high: '<span style="color:#ef4444;font-weight:600;">High</span>' }[r.incidents] || r.incidents;
     marker.bindPopup(`
       <div style="font-family:system-ui,sans-serif;min-width:180px;padding:2px 0;">
         <div style="font-weight:700;font-size:14px;color:#111;margin-bottom:6px;">${r.name}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#555;">
-          <div>👮 Guards</div><div style="font-weight:600;color:#111;">${r.guard_count}</div>
+          <div>👮 Guards</div><div style="font-weight:600;color:#111;">${r.guard_count || 0}</div>
           <div>🏢 Sites</div><div style="font-weight:600;color:#111;">${r.sites}</div>
           <div>⚠️ Incidents</div><div>${incidentBadge}</div>
         </div>
-      </div>
-    `, { maxWidth: 220 });
-
+      </div>`, { maxWidth: 220 });
     marker.addTo(map);
-  });
-
-  // ── Default: if no markers, still show Kenya ─────────────────────
-  if (mapMarkers.length === 0) {
-    L.marker([-1.2921, 36.8219], { icon: makeIcon('stable') })
-      .bindPopup('<b>Nairobi</b><br>No region data yet.')
-      .addTo(map);
+    liveMarkers.push(marker);
   }
 
-  // ── Toggle map style ─────────────────────────────────────────────
+  mapMarkers.forEach(placeMarker);
+
+  if (mapMarkers.length === 0) {
+    L.marker([-1.2921, 36.8219], { icon: makeIcon('stable') })
+      .bindPopup('<b>Nairobi</b><br>No region data yet.').addTo(map);
+  }
+
   function setMapStyle(style) {
     if (style === currentStyle) return;
     map.removeLayer(tileLayers[currentStyle]);
@@ -364,20 +406,13 @@
 
   // ── Pulse animation ──────────────────────────────────────────────
   const style = document.createElement('style');
-  style.textContent = `
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.6; }
-      50% { transform: scale(2.2); opacity: 0; }
-    }
-  `;
+  style.textContent = `@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(2.2);opacity:0} }`;
   document.head.appendChild(style);
 
   // ── Three-dot menus ──────────────────────────────────────────────
   function toggleMenu(id) {
     const menu = document.getElementById('menu-' + id);
-    document.querySelectorAll('.region-menu').forEach(m => {
-      if (m !== menu) m.classList.add('hidden');
-    });
+    document.querySelectorAll('.region-menu').forEach(m => { if (m !== menu) m.classList.add('hidden'); });
     menu.classList.toggle('hidden');
   }
   document.addEventListener('click', function(e) {
@@ -385,6 +420,149 @@
       document.querySelectorAll('.region-menu').forEach(m => m.classList.add('hidden'));
     }
   });
-</script>
 
+  // ── Preview map inside modal ──────────────────────────────────────
+  let previewMap = null;
+  let previewMarker = null;
+
+  function initPreviewMap() {
+    if (previewMap) return;
+    previewMap = L.map('previewMap', {
+      center: [-1.2921, 36.8219], zoom: 10, zoomControl: false
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CartoDB', subdomains: 'abcd', maxZoom: 19
+    }).addTo(previewMap);
+
+    // Click on preview map to set coordinates
+    previewMap.on('click', function(e) {
+      document.getElementById('r_lat').value = e.latlng.lat.toFixed(6);
+      document.getElementById('r_lng').value = e.latlng.lng.toFixed(6);
+      placePreviewMarker(e.latlng.lat, e.latlng.lng);
+    });
+  }
+
+  function placePreviewMarker(lat, lng) {
+    if (previewMarker) previewMap.removeLayer(previewMarker);
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:2px solid white;box-shadow:0 0 8px #ef444488;"></div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7]
+    });
+    previewMarker = L.marker([lat, lng], { icon }).addTo(previewMap);
+    previewMap.setView([lat, lng], 12);
+  }
+
+  function updatePreviewMap() {
+    const lat = parseFloat(document.getElementById('r_lat').value);
+    const lng = parseFloat(document.getElementById('r_lng').value);
+    if (isNaN(lat) || isNaN(lng)) {
+      showFormError('Enter valid coordinates first, then click Update preview.');
+      return;
+    }
+    placePreviewMarker(lat, lng);
+  }
+
+  // ── Modal open/close ──────────────────────────────────────────────
+  function openAddModal() {
+    document.getElementById('addRegionModal').classList.remove('hidden');
+    // Init preview map after modal is visible (Leaflet needs visible container)
+    setTimeout(initPreviewMap, 50);
+  }
+
+  function closeAddModal() {
+    document.getElementById('addRegionModal').classList.add('hidden');
+    document.getElementById('regionFormError').classList.add('hidden');
+  }
+
+  // Replace the inline onclick on the header button — update the button in HTML:
+  document.querySelector('[onclick="document.getElementById(\'addRegionModal\').classList.remove(\'hidden\')"]')
+    ?.setAttribute('onclick', 'openAddModal()');
+
+  // ── Form error helper ─────────────────────────────────────────────
+  function showFormError(msg) {
+    const el = document.getElementById('regionFormError');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  // ── Submit region ─────────────────────────────────────────────────
+  async function submitRegion() {
+    document.getElementById('regionFormError').classList.add('hidden');
+
+    const name       = document.getElementById('r_name').value.trim();
+    const code       = document.getElementById('r_code').value.trim();
+    const status     = document.getElementById('r_status').value;
+    const incidents  = document.getElementById('r_incidents').value;
+    const lat        = document.getElementById('r_lat').value;
+    const lng        = document.getElementById('r_lng').value;
+    const sites      = document.getElementById('r_sites').value || 0;
+    const manager    = document.getElementById('r_manager').value.trim();
+
+    if (!name || !code) { showFormError('Region name and code are required.'); return; }
+    if (!lat || !lng)   { showFormError('Coordinates are required.'); return; }
+
+    // Loading state
+    document.getElementById('submitRegionBtn').disabled = true;
+    document.getElementById('submitRegionLabel').textContent = 'Creating...';
+    document.getElementById('submitRegionSpinner').classList.remove('hidden');
+
+    try {
+      const res = await fetch("{% url 'regions:create_region' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          name, region_code: code, status, incidents,
+          lat: parseFloat(lat), lng: parseFloat(lng),
+          sites: parseInt(sites), manager_name: manager || 'Unassigned'
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        showFormError(data.error || 'Something went wrong.');
+        return;
+      }
+
+      // ── Success: add marker to live map without page reload ──────
+      placeMarker(data.region);
+
+      // Pan main map to new region
+      map.setView([data.region.lat, data.region.lng], 10);
+
+      // Close modal and show a brief success toast
+      closeAddModal();
+      showToast(`Region "${data.region.name}" created successfully.`);
+
+      // Reset form
+      ['r_name','r_code','r_lat','r_lng','r_manager'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('r_sites').value = '0';
+      document.getElementById('r_status').value = 'stable';
+      document.getElementById('r_incidents').value = 'low';
+
+      // Reload page after 1.5s so the region card appears in the grid
+      setTimeout(() => location.reload(), 1500);
+
+    } catch (e) {
+      showFormError('Network error. Please try again.');
+    } finally {
+      document.getElementById('submitRegionBtn').disabled = false;
+      document.getElementById('submitRegionLabel').textContent = 'Create Region';
+      document.getElementById('submitRegionSpinner').classList.add('hidden');
+    }
+  }
+
+  // ── Toast helper ──────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#111;color:#fff;font-size:13px;padding:12px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:opacity 0.3s;';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+  }
+</script>
 {% endblock %}

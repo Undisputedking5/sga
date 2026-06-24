@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block page_title %}{{ guard.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ── BREADCRUMB ─────────────────────────────────────────────── -->
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <a href="{% url 'guards:directory' %}" class="hover:text-red-600 transition-colors">Guards</a>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-900 font-medium">{{ guard.name }}</span>
+  </div>
+
+  <!-- ── PROFILE HEADER ─────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+
+      <!-- Avatar + name -->
+      <div class="flex items-center gap-5">
+        {% if guard.avatar_url %}
+          <img src="{{ guard.avatar_url }}" class="w-20 h-20 rounded-full object-cover flex-shrink-0"/>
+        {% else %}
+          <div class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
+            style="background-color: {{ guard.avatar_color }};">
+            {{ guard.initials }}
+          </div>
+        {% endif %}
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h1 class="text-2xl font-bold text-gray-900">{{ guard.name }}</h1>
+            {% if guard.role == 'manager' %}
+              <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-2.5 py-1 rounded-full">MANAGER</span>
+            {% endif %}
+            {% if guard.certified %}
+              <span class="bg-green-50 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">✓ CERTIFIED</span>
+            {% endif %}
+          </div>
+          <p class="text-sm text-gray-400 font-mono mt-1">{{ guard.guard_id }}</p>
+          <p class="text-sm text-gray-500 mt-1">
+            {{ guard.rank|default:"—"|title }}
+            {% if guard.region_name %} &nbsp;·&nbsp; {{ guard.region_name }}{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button onclick="openEditModal()"
+          class="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Edit Profile
+        </button>
+        <a href="{% url 'guards:directory' %}"
+          class="inline-flex items-center gap-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          Back
+        </a>
+      </div>
+    </div>
+
+    <!-- Status + contact info -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Status</p>
+        {% if guard.status == 'active' %}
+          <span class="inline-flex mt-2 items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">ACTIVE</span>
+        {% elif guard.status == 'on_leave' %}
+          <span class="inline-flex mt-2 items-center px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">ON LEAVE</span>
+        {% elif guard.status == 'urgent' %}
+          <span class="inline-flex mt-2 items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-600 text-white">URGENT</span>
+        {% else %}
+          <span class="inline-flex mt-2 items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">INACTIVE</span>
+        {% endif %}
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Phone</p>
+        <p class="text-sm font-semibold text-gray-900 mt-2">{{ guard.phone|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Email</p>
+        <p class="text-sm font-semibold text-gray-900 mt-2 truncate">{{ guard.email|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Last Active</p>
+        <p class="text-sm font-semibold text-gray-900 mt-2">{{ guard.last_active }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ATTENDANCE SUMMARY + RECENT ────────────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- Summary stats -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <h2 class="text-sm font-semibold text-gray-900 mb-4">Attendance (Last {{ total_days }} days)</h2>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Present</span>
+          <span class="text-sm font-bold text-green-600">{{ present }}</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+          <div class="bg-green-500 h-1.5 rounded-full"
+            style="width: {% if total_days %}{{ present|floatformat:0 }}{% else %}0{% endif %}%"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Late</span>
+          <span class="text-sm font-bold text-yellow-500">{{ late }}</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+          <div class="bg-yellow-400 h-1.5 rounded-full"
+            style="width: {% if total_days %}{{ late|floatformat:0 }}{% else %}0{% endif %}%"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Absent</span>
+          <span class="text-sm font-bold text-red-600">{{ absent }}</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+          <div class="bg-red-500 h-1.5 rounded-full"
+            style="width: {% if total_days %}{{ absent|floatformat:0 }}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent attendance -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-900">Recent Attendance</h2>
+      </div>
+      <div class="divide-y divide-gray-50">
+        {% for rec in attendance %}
+        <div class="flex items-center justify-between px-5 py-3">
+          <div>
+            <p class="text-sm font-medium text-gray-900">{{ rec.date }}</p>
+            <p class="text-xs text-gray-400">{{ rec.site }}</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-gray-500">
+            <span>{{ rec.clock_in }} → {{ rec.clock_out }}</span>
+            {% if rec.status == 'on_time' %}
+              <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">On Time</span>
+            {% elif rec.status == 'late' %}
+              <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">Late</span>
+            {% else %}
+              <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Absent</span>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="px-5 py-10 text-center text-sm text-gray-400">No attendance records found.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECENT REPORTS ──────────────────────────────────────────── -->
+  {% if reports %}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-900">Recent Reports</h2>
+    </div>
+    <div class="divide-y divide-gray-50">
+      {% for rep in reports %}
+      <div class="flex items-center justify-between px-5 py-3">
+        <div>
+          <p class="text-sm font-medium text-gray-900">{{ rep.title }}</p>
+          <p class="text-xs text-gray-400">{{ rep.date }} · {{ rep.type|title }}</p>
+        </div>
+        {% if rep.status == 'approved' %}
+          <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Approved</span>
+        {% elif rep.status == 'pending' %}
+          <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">Pending</span>
+        {% elif rep.status == 'needs_revision' %}
+          <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Revision</span>
+        {% else %}
+          <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">{{ rep.status|title }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ── EDIT MODAL ──────────────────────────────────────────────── -->
+<div id="editGuardModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
+      <h3 class="text-base font-semibold text-gray-900">Edit Profile</h3>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-5 space-y-4">
+      <div id="editGuardError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3"></div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Full Name *</label>
+        <input id="eg_name" type="text" value="{{ guard.name }}"
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Phone</label>
+          <input id="eg_phone" type="text" value="{{ guard.phone|default:'' }}"
+            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+            {% if guard.role == 'manager' %}Title{% else %}Rank{% endif %}
+          </label>
+          {% if guard.role == 'manager' %}
+          <select id="eg_rank" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="area_manager" {% if guard.rank == 'area_manager' %}selected{% endif %}>Area Manager</option>
+            <option value="regional_manager" {% if guard.rank == 'regional_manager' %}selected{% endif %}>Regional Manager</option>
+            <option value="operations_manager" {% if guard.rank == 'operations_manager' %}selected{% endif %}>Operations Manager</option>
+            <option value="senior_manager" {% if guard.rank == 'senior_manager' %}selected{% endif %}>Senior Manager</option>
+          </select>
+          {% else %}
+          <select id="eg_rank" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="guard" {% if guard.rank == 'guard' %}selected{% endif %}>Guard</option>
+            <option value="senior_guard" {% if guard.rank == 'senior_guard' %}selected{% endif %}>Senior Guard</option>
+            <option value="supervisor" {% if guard.rank == 'supervisor' %}selected{% endif %}>Supervisor</option>
+            <option value="team_lead" {% if guard.rank == 'team_lead' %}selected{% endif %}>Team Lead</option>
+          </select>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Region</label>
+          <select id="eg_region" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            {% for rid, rname in regions %}
+            {% if rid != "All Regions" %}
+            <option value="{{ rid }}" {% if rid == guard.region %}selected{% endif %}>{{ rname }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+          <select id="eg_status" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="active" {% if guard.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="on_leave" {% if guard.status == 'on_leave' %}selected{% endif %}>On Leave</option>
+            <option value="urgent" {% if guard.status == 'urgent' %}selected{% endif %}>Urgent</option>
+            <option value="inactive" {% if guard.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+      <button onclick="closeEditModal()"
+        class="text-sm text-gray-500 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitEdit()"
+        class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+        <span id="editGuardLabel">Save Changes</span>
+        <svg id="editGuardSpinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openEditModal()  { document.getElementById('editGuardModal').classList.remove('hidden'); }
+  function closeEditModal() { document.getElementById('editGuardModal').classList.add('hidden'); }
+
+  async function submitEdit() {
+    document.getElementById('editGuardError').classList.add('hidden');
+    document.getElementById('editGuardLabel').textContent = 'Saving...';
+    document.getElementById('editGuardSpinner').classList.remove('hidden');
+
+    const body = {
+      name:   document.getElementById('eg_name').value.trim(),
+      phone:  document.getElementById('eg_phone').value.trim(),
+      rank:   document.getElementById('eg_rank').value,
+      region: document.getElementById('eg_region').value,
+      status: document.getElementById('eg_status').value,
+    };
+
+    try {
+      const res  = await fetch("{% url 'guards:edit' guard.uid %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById('editGuardError').textContent = data.error;
+        document.getElementById('editGuardError').classList.remove('hidden');
+        return;
+      }
+      closeEditModal();
+      location.reload();
+    } catch (e) {
+      document.getElementById('editGuardError').textContent = 'Network error. Please try again.';
+      document.getElementById('editGuardError').classList.remove('hidden');
+    } finally {
+      document.getElementById('editGuardLabel').textContent = 'Save Changes';
+      document.getElementById('editGuardSpinner').classList.add('hidden');
+    }
+  }
+</script>
+{% endblock %}

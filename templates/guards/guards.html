@@ -200,11 +200,11 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                   </button>
-                  <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Edit">
+                  <a href="{% url 'guards:detail' guard.uid %}" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Edit">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
-                  </button>
+                    <a/>
                   <div class="relative">
                     <button onclick="toggleMenu('gmenu-{{ guard.uid }}')"
                       class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="More">
@@ -356,7 +356,7 @@
         </div>
       </div>
 
-      <!-- Phone + Rank -->
+     <!-- Phone + Rank/Title -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">Phone</label>
@@ -365,11 +365,26 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1.5" id="gRankLabel">Rank</label>
-          <input type="text" id="gRank" placeholder="e.g. Senior Guard"
-            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <!-- Guard ranks -->
+          <select id="gRankGuard"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="">Select rank...</option>
+            <option value="guard">Guard</option>
+            <option value="senior_guard">Senior Guard</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="team_lead">Team Lead</option>
+          </select>
+          <!-- Manager titles — hidden by default -->
+          <select id="gRankManager"
+            class="hidden w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white">
+            <option value="">Select title...</option>
+            <option value="area_manager">Area Manager</option>
+            <option value="regional_manager">Regional Manager</option>
+            <option value="operations_manager">Operations Manager</option>
+            <option value="senior_manager">Senior Manager</option>
+          </select>
         </div>
       </div>
-
       <!-- Region -->
       <div>
         <label class="block text-xs font-semibold text-gray-500 mb-1.5">Region <span class="text-red-600">*</span></label>
@@ -422,11 +437,13 @@ const CSRF_GUARDS = '{{ csrf_token }}';
 
 function setRole(val) {
   document.getElementById('gRole').value = val;
-  const guardBtn   = document.getElementById('roleGuardBtn');
-  const managerBtn = document.getElementById('roleManagerBtn');
-  const submitBtn  = document.getElementById('gSubmitBtn');
-  const idLabel    = document.getElementById('gIdLabel');
-  const rankLabel  = document.getElementById('gRankLabel');
+  const guardBtn    = document.getElementById('roleGuardBtn');
+  const managerBtn  = document.getElementById('roleManagerBtn');
+  const submitBtn   = document.getElementById('gSubmitBtn');
+  const idLabel     = document.getElementById('gIdLabel');
+  const rankLabel   = document.getElementById('gRankLabel');
+  const rankGuard   = document.getElementById('gRankGuard');
+  const rankManager = document.getElementById('gRankManager');
 
   if (val === 'manager') {
     guardBtn.className   = 'flex items-center justify-center gap-2 py-3 border-2 border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-500 transition-all';
@@ -435,7 +452,8 @@ function setRole(val) {
     idLabel.innerHTML = 'Manager ID <span class="text-red-600">*</span>';
     rankLabel.textContent = 'Title';
     document.getElementById('gGuardId').placeholder = 'e.g. MGR-0001';
-    document.getElementById('gRank').placeholder = 'e.g. Area Manager';
+    rankGuard.classList.add('hidden');
+    rankManager.classList.remove('hidden');
   } else {
     guardBtn.className   = 'flex items-center justify-center gap-2 py-3 border-2 border-red-500 bg-red-50 rounded-xl text-sm font-semibold text-red-700 transition-all';
     managerBtn.className = 'flex items-center justify-center gap-2 py-3 border-2 border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-500 transition-all';
@@ -443,7 +461,8 @@ function setRole(val) {
     idLabel.innerHTML = 'Guard ID <span class="text-red-600">*</span>';
     rankLabel.textContent = 'Rank';
     document.getElementById('gGuardId').placeholder = 'e.g. SGA-0042';
-    document.getElementById('gRank').placeholder = 'e.g. Senior Guard';
+    rankGuard.classList.remove('hidden');
+    rankManager.classList.add('hidden');
   }
 }
 
@@ -469,11 +488,14 @@ async function submitAddGuard() {
   const name     = document.getElementById('gName').value.trim();
   const guardId  = document.getElementById('gGuardId').value.trim();
   const phone    = document.getElementById('gPhone').value.trim();
-  const rank     = document.getElementById('gRank').value.trim();
+  const role = document.getElementById('gRole').value;
+const rankEl = role === 'manager'
+  ? document.getElementById('gRankManager')
+  : document.getElementById('gRankGuard');
+const rank = rankEl.value;
   const region   = document.getElementById('gRegion').value;
   const email    = document.getElementById('gEmail').value.trim();
   const password = document.getElementById('gPassword').value.trim();
-  const role     = document.getElementById('gRole').value;
   const errEl    = document.getElementById('gError');
   const btn      = document.getElementById('gSubmitBtn');
 

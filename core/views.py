@@ -18,11 +18,7 @@ def login_view(request):
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
-        print(f"👉 FORM SUBMISSION EMAIL: '{email}'")
-        print(f"👉 FORM SUBMISSION PASSWORD: '{password}'")
 
-
-        # Input validation — never hits a DB
         if not email or not password:
             error = "Email and password are required."
         else:
@@ -39,7 +35,7 @@ def login_view(request):
                     request.session["uid"] = data["localId"]
                     request.session["email"] = data["email"]
                     request.session["id_token"] = data["idToken"]
-                    request.session.set_expiry(86400)  # 24hr
+                    request.session.set_expiry(86400)
                     return redirect("overview:overview")
                 else:
                     code = data.get("error", {}).get("message", "")

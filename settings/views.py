@@ -5,6 +5,12 @@ from django.contrib import messages
 from core.decorators import login_required
 from core.firebase import db
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from firebase_admin import storage, db as rtdb
+
+
 
 @login_required
 def settings_view(request):
@@ -197,3 +203,60 @@ def update_notifications(request):
 from django.shortcuts import render
 
 # Create your views here.
+# settings/views.py  — add this view alongside your existing update_profile / reset_password views
+
+
+@login_required
+@require_POST
+def upload_avatar(request):
+    """
+    POST with file field 'avatar'  → upload to Firebase Storage, save URL to /admins/{uid}/avatar_url
+    POST with body param 'remove=1' → delete from Storage and clear URL in DB
+    Returns JSON {"avatar_url": "..."} or {"ok": true} or {"error": "..."}
+    """
+    uid = request.user.uid  # adjust if you store UID differently on your user model
+
+    # ── Remove ────────────────────────────────────────────────────────────────
+    if request.POST.get("remove"):
+        try:
+            bucket = storage.bucket()
+            for ext in ("jpg", "jpeg", "png", "webp"):
+                blob = bucket.blob(f"avatars/{uid}.{ext}")
+                if blob.exists():
+                    blob.delete()
+            rtdb.reference(f"admins/{uid}").update({"avatar_url": ""})
+            return JsonResponse({"ok": True})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    # ── Upload ────────────────────────────────────────────────────────────────
+    avatar_file = request.FILES.get("avatar")
+    if not avatar_file:
+        return JsonResponse({"error": "No file provided."}, status=400)
+
+    # Validate content type
+    allowed = {"image/jpeg", "image/png", "image/webp"}
+    if avatar_file.content_type not in allowed:
+        return JsonResponse({"error": "Only JPEG, PNG, or WebP images are allowed."}, status=400)
+
+    # Validate size (max 5 MB)
+    if avatar_file.size > 5 * 1024 * 1024:
+        return JsonResponse({"error": "Image must be under 5 MB."}, status=400)
+
+    ext = avatar_file.content_type.split("/")[-1]   # jpeg / png / webp
+    blob_path = f"avatars/{uid}.{ext}"
+
+    try:
+        bucket = storage.bucket()
+        blob = bucket.blob(blob_path)
+        blob.upload_from_file(avatar_file, content_type=avatar_file.content_type)
+        blob.make_public()
+        download_url = blob.public_url
+
+        # Persist URL to Realtime DB
+        rtdb.reference(f"admins/{uid}").update({"avatar_url": download_url})
+
+        return JsonResponse({"avatar_url": download_url})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

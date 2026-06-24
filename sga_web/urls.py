@@ -20,6 +20,8 @@ from django.urls import path, include
 urlpatterns = [
     # path('admin/', admin.site.urls),
     path('', include('core.urls')),
+    path('', lambda request: redirect('login/')),  # ← add this
+
     path('overview/', include('overview.urls')),
     path('attendance/', include('attendance.urls')),
     path('guards/', include('guards.urls')),

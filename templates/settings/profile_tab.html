@@ -1,4 +1,7 @@
 <!-- Public Profile Card -->
+<!-- Replace your existing Public Profile Card block with this -->
+
+<!-- Public Profile Card -->
 <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
   <div class="flex items-start gap-8">
     <div class="min-w-[160px]">
@@ -6,48 +9,177 @@
       <p class="text-sm text-gray-500 mt-1">Update your account information and visual identity within the portal.</p>
     </div>
 
-    <form method="POST" action="{% url 'settings:update_profile' %}" class="flex-1">
-      {% csrf_token %}
+    <div class="flex-1">
+      <!-- Hidden file input -->
+      <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" class="hidden">
+
       <div class="flex items-center gap-3 mb-5">
-        <div class="w-16 h-16 rounded-full bg-red-700 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
+        <!-- Avatar preview -->
+        <div id="avatar-wrapper"
+             class="w-16 h-16 rounded-full bg-red-700 flex items-center justify-center text-white text-xl font-bold overflow-hidden cursor-pointer relative"
+             onclick="document.getElementById('avatar-input').click()">
           {% if admin_data.avatar_url %}
-            <img src="{{ admin_data.avatar_url }}" alt="Avatar" class="w-full h-full object-cover">
+            <img id="avatar-img" src="{{ admin_data.avatar_url }}" alt="Avatar" class="w-full h-full object-cover">
           {% else %}
-            {{ display_name|slice:":1"|upper }}
+            <span id="avatar-initials">{{ display_name|slice:":1"|upper }}</span>
           {% endif %}
+
+          <!-- Upload spinner (hidden by default) -->
+          <div id="avatar-spinner"
+               class="absolute inset-0 bg-black bg-opacity-50 rounded-full hidden flex items-center justify-center">
+            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+          </div>
         </div>
-        <button type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+
+        <button type="button"
+                onclick="document.getElementById('avatar-input').click()"
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
           Upload New Photo
         </button>
-        <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 transition-colors">
+        <button type="button"
+                id="remove-avatar-btn"
+                class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 transition-colors {% if not admin_data.avatar_url %}hidden{% endif %}">
           Remove
         </button>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Admin Name</label>
-          <input type="text" name="admin_name"
-            value="{{ admin_data.display_name|default:display_name }}"
-            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Email Address</label>
-          <input type="email" name="email"
-            value="{{ admin_data.email|default:email }}"
-            class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
-        </div>
-      </div>
+      <!-- Status message -->
+      <p id="avatar-status" class="text-sm mb-3 hidden"></p>
 
-      <div class="flex justify-end">
-        <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
-          Save Changes
-        </button>
-      </div>
-    </form>
+      <!-- Name / email form (unchanged) -->
+      <form method="POST" action="{% url 'settings:update_profile' %}">
+        {% csrf_token %}
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Admin Name</label>
+            <input type="text" name="admin_name"
+              value="{{ admin_data.display_name|default:display_name }}"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Email Address</label>
+            <input type="email" name="email"
+              value="{{ admin_data.email|default:email }}"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <button type="submit"
+                  class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
+<!-- Avatar upload JS -->
+<script>
+(function () {
+  const input       = document.getElementById('avatar-input');
+  const spinner     = document.getElementById('avatar-spinner');
+  const statusEl    = document.getElementById('avatar-status');
+  const removeBtn   = document.getElementById('remove-avatar-btn');
+  const wrapper     = document.getElementById('avatar-wrapper');
+
+  function showStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.className = 'text-sm mb-3 ' + (isError ? 'text-red-600' : 'text-green-600');
+    statusEl.classList.remove('hidden');
+    setTimeout(() => statusEl.classList.add('hidden'), 4000);
+  }
+
+  function setAvatar(url) {
+    // Remove initials span if present
+    const initials = document.getElementById('avatar-initials');
+    if (initials) initials.remove();
+
+    let img = document.getElementById('avatar-img');
+    if (!img) {
+      img = document.createElement('img');
+      img.id = 'avatar-img';
+      img.alt = 'Avatar';
+      img.className = 'w-full h-full object-cover';
+      wrapper.insertBefore(img, spinner);
+    }
+    img.src = url;
+    removeBtn.classList.remove('hidden');
+  }
+
+  // ── Upload ────────────────────────────────────────────────────────────────
+  input.addEventListener('change', async function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showStatus('Image must be under 5 MB.', true);
+      return;
+    }
+
+    spinner.classList.remove('hidden');
+    statusEl.classList.add('hidden');
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const resp = await fetch("{% url 'settings:upload_avatar' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: formData,
+      });
+      const data = await resp.json();
+
+      if (resp.ok && data.avatar_url) {
+        setAvatar(data.avatar_url);
+        showStatus('Profile photo updated.', false);
+      } else {
+        showStatus(data.error || 'Upload failed.', true);
+      }
+    } catch (e) {
+      showStatus('Network error. Please try again.', true);
+    } finally {
+      spinner.classList.add('hidden');
+      input.value = '';
+    }
+  });
+
+  // ── Remove ────────────────────────────────────────────────────────────────
+  removeBtn.addEventListener('click', async function () {
+    spinner.classList.remove('hidden');
+    try {
+      const resp = await fetch("{% url 'settings:upload_avatar' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: new URLSearchParams({ remove: '1' }),
+      });
+      if (resp.ok) {
+        const img = document.getElementById('avatar-img');
+        if (img) img.remove();
+
+        // Restore initials
+        if (!document.getElementById('avatar-initials')) {
+          const span = document.createElement('span');
+          span.id = 'avatar-initials';
+          span.textContent = '{{ display_name|slice:":1"|upper }}';
+          wrapper.insertBefore(span, spinner);
+        }
+        removeBtn.classList.add('hidden');
+        showStatus('Profile photo removed.', false);
+      }
+    } catch (e) {
+      showStatus('Network error. Please try again.', true);
+    } finally {
+      spinner.classList.add('hidden');
+    }
+  });
+})();
+</script>
 <!-- Password Card -->
 <div class="bg-white border border-gray-200 rounded-lg p-6">
   <div class="flex items-center gap-8">

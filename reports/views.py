@@ -5,6 +5,8 @@ from core.decorators import login_required
 from core.firebase import db
 import logging
 from datetime import datetime, timedelta
+import json
+from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
 
@@ -190,3 +192,49 @@ def report_detail_view(request, report_id):
         'page_title': report.get('title', 'Report Detail'),
     }
     return render(request, 'reports/report_detail.html', context)
+
+
+@login_required
+@require_POST
+def send_report_notification(request, report_id):
+    """Send a notification to a guard about their report."""
+    try:
+        data    = json.loads(request.body)
+        message = data.get('message', '').strip()
+        notify_type = data.get('type', 'report')  # 'report', 'revision', 'approved'
+
+        if not message:
+            return JsonResponse({'error': 'Message is required.'}, status=400)
+
+        # Fetch the report
+        report_raw = db.reference(f'/reports/{report_id}').get()
+        if not report_raw:
+            return JsonResponse({'error': 'Report not found.'}, status=404)
+
+        submitter_uid  = report_raw.get('submitter_uid', '') or report_raw.get('submitted_by', '')
+        submitter_name = report_raw.get('submitted_by_name', '') or report_raw.get('submitted_by', 'Guard')
+        report_title   = report_raw.get('title', 'Report')
+        region         = report_raw.get('region_name', '') or report_raw.get('region', '')
+
+        # Write alert to Firebase — Android app listens to /alerts
+        alert_ref = db.reference('/alerts').push()
+        alert_ref.set({
+            'type':        notify_type,
+            'title':       f'Re: {report_title}',
+            'message':     message,
+            'guard_uid':   submitter_uid,
+            'guard_name':  submitter_name,
+            'site_name':   report_raw.get('site', ''),
+            'region':      region,
+            'report_id':   report_id,
+            'timestamp':   {'.sv': 'timestamp'},
+            'read':        False,
+            'resolved':    False,
+            'sent_by':     request.session.get('display_name', 'Admin'),
+        })
+
+        return JsonResponse({'success': True, 'alert_id': alert_ref.key})
+
+    except Exception as e:
+        logger.error(f"Send report notification error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
