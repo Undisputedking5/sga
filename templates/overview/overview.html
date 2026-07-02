@@ -286,7 +286,7 @@ function respondToSos(alertId, guardName) {
     btn.innerHTML = '<span class="material-icons-outlined text-[12px] animate-spin">autorenew</span> Responding...';
     btn.classList.add('opacity-70', 'cursor-not-allowed');
 
-    fetch(`/respond-sos/${alertId}/`, {
+    fetch(`/overview/respond-sos/${alertId}/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCookie('csrftoken'),
